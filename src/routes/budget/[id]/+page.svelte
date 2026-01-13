@@ -1,0 +1,478 @@
+<script lang="ts">
+	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
+	import { liveQuery } from 'dexie';
+	import type { ScheduledTransactionFrequency, ScheduledTransactionDetail } from 'ynab';
+	import { db } from '$lib/db';
+	import { onMount } from 'svelte';
+	import { resolve } from '$app/paths';
+	import type { CustomBudgetDetail, CustomScheduledTransactionDetail } from '$lib/db';
+	import { SvelteURLSearchParams } from 'svelte/reactivity';
+
+	// MARK: - Mount and budgetId extraction
+
+	let budgetId = $state<string | null>(null);
+
+	onMount(async () => {
+		const id = $page.params.id;
+
+		if (!id) {
+			goto(resolve('/'));
+			return;
+		}
+
+		const budgetIdExistsInDb = await db.budgets.get(id);
+
+		if (!budgetIdExistsInDb) {
+			goto(resolve('/'));
+			return;
+		}
+
+		budgetId = id;
+	});
+
+	// MARK: - Fetching current budget from IndexedDB with live updates
+
+	let currentBudget = $state<CustomBudgetDetail | null>(null);
+
+	$effect(() => {
+		if (!budgetId) return;
+
+		const subscription = liveQuery(() =>
+			db.budgets.where('id').equals(budgetId!).first()
+		).subscribe((budget) => {
+			currentBudget = budget ?? null;
+		});
+
+		return () => subscription.unsubscribe();
+	});
+
+	// MARK: - Fetching scheduled transactions for budget
+
+	let fetchingScheduledTransactions = $state(false);
+
+	async function getScheduledTransactionsForBudget() {
+		fetchingScheduledTransactions = true;
+
+		const budgetIdValue = budgetId;
+
+		// Get last knowledge of server
+		const lastKnowledgeOfServerForBudget = currentBudget?.scheduled_transactions_server_knowledge;
+
+		if (!budgetIdValue) {
+			console.error('Budget ID is missing.');
+			fetchingScheduledTransactions = false;
+			return;
+		}
+
+		let endpoint = `https://api.ynab.com/v1/budgets/${budgetIdValue}/scheduled_transactions?budget_id=${budgetIdValue}`;
+
+		if (lastKnowledgeOfServerForBudget) {
+			endpoint += `&last_knowledge_of_server=${lastKnowledgeOfServerForBudget}`;
+		}
+
+		const response = await fetch(endpoint, {
+			headers: {
+				Authorization: `Bearer ${sessionStorage.getItem('ynab_access_token')}`
+			}
+		});
+
+		if (!response.ok) {
+			console.error('Failed to fetch scheduled transactions:', response.statusText);
+			fetchingScheduledTransactions = false;
+			return;
+		}
+
+		const responseData = await response.json();
+
+		const scheduledTransactions = responseData.data.scheduled_transactions.map(
+			(transaction: ScheduledTransactionDetail) => ({
+				...transaction,
+				budget_id: budgetIdValue
+			})
+		);
+
+		const newServerKnowledge = responseData.data.server_knowledge;
+
+		// Update the budget in IndexedDB with the new scheduled transactions and server knowledge
+		await db.scheduled_transactions.bulkPut(scheduledTransactions);
+
+		await db.budgets.update(budgetIdValue, {
+			scheduled_transactions_server_knowledge: newServerKnowledge,
+			scheduled_transactions_last_fetched: new Date()
+		});
+
+		fetchingScheduledTransactions = false;
+	}
+
+	// MARK: - Resetting data for budget
+
+	let resettingData = $state(false);
+
+	function resetDataForBudget() {
+		const budgetIdValue = budgetId;
+
+		if (!budgetIdValue) {
+			console.error('Budget ID is missing.');
+			return;
+		}
+
+		if (
+			!confirm(
+				'Are you sure you want to reset the scheduled transactions data for this budget? This action cannot be undone.'
+			)
+		) {
+			return;
+		}
+
+		resettingData = true;
+
+		db.transaction('rw', db.budgets, db.scheduled_transactions, async () => {
+			await db.scheduled_transactions.where('budget_id').equals(budgetIdValue).delete();
+			await db.budgets.update(budgetIdValue, {
+				scheduled_transactions_server_knowledge: 0,
+				scheduled_transactions_last_fetched: undefined
+			});
+		})
+			.catch((error) => {
+				console.error('Failed to reset data for budget:', error);
+			})
+			.finally(() => {
+				resettingData = false;
+			});
+	}
+
+	// MARK: - Sorting options with URL query params
+
+	let sortBy = $derived.by(() => {
+		const sortColumn = $page.url.searchParams.get('sort_by');
+		const sortDirection = $page.url.searchParams.get('sort_direction');
+
+		if (sortColumn === 'amount' && (sortDirection === 'asc' || sortDirection === 'desc')) {
+			return 'amount';
+		}
+
+		// Default sorting is by next due date
+		return 'date_next';
+	});
+
+	function setSortBy(option: string) {
+		const currentSortDirection = $page.url.searchParams.get('sort_direction');
+		const newDirection = sortBy === option && currentSortDirection === 'asc' ? 'desc' : 'asc';
+
+		const params = new SvelteURLSearchParams($page.url.searchParams);
+		params.set('sort_by', option);
+		params.set('sort_direction', newDirection);
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		goto(`?${params.toString()}`, { replaceState: true });
+	}
+
+	let sortDirection = $derived.by(() => {
+		const direction = $page.url.searchParams.get('sort_direction');
+		if (direction === 'asc' || direction === 'desc') {
+			return direction;
+		}
+		return 'asc';
+	});
+
+	function setSortDirection(direction: string) {
+		const params = new SvelteURLSearchParams($page.url.searchParams);
+		params.set('sort_by', sortBy);
+		params.set('sort_direction', direction);
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		goto(`?${params.toString()}`, { replaceState: true });
+	}
+
+	// MARK: - Bills list with live updates from IndexedDB
+
+	let rawBills = $state<CustomScheduledTransactionDetail[]>([]);
+
+	$effect(() => {
+		if (!budgetId) return;
+
+		const subscription = liveQuery(async () => {
+			return db.scheduled_transactions
+				.where('budget_id')
+				.equals(budgetId!)
+				.and((transaction) => !transaction.deleted && transaction.amount < 0)
+				.toArray();
+		}).subscribe((transactions) => {
+			rawBills = transactions || [];
+		});
+
+		return () => subscription.unsubscribe();
+	});
+
+	// Sort transactions reactively based on sortBy and sortDirection
+	let bills = $derived.by(() => {
+		const transactions = rawBills;
+		if (!transactions) return [];
+
+		if (sortBy === 'date_next') {
+			return [...transactions].sort((a, b) => {
+				const dateA = new Date(a.date_next).getTime();
+				const dateB = new Date(b.date_next).getTime();
+				return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+			});
+		} else if (sortBy === 'amount') {
+			return [...transactions].sort((a, b) =>
+				sortDirection === 'desc' ? a.amount - b.amount : b.amount - a.amount
+			);
+		}
+
+		return transactions;
+	});
+
+	// MARK: - Frequency parsing
+
+	function parseFrequencyText(frequency: ScheduledTransactionFrequency) {
+		switch (frequency) {
+			case 'never':
+				return 'Never';
+			case 'daily':
+				return 'Daily';
+			case 'weekly':
+				return 'Weekly';
+			case 'everyOtherWeek':
+				return 'Every Other Week';
+			case 'twiceAMonth':
+				return 'Twice Monthly';
+			case 'monthly':
+				return 'Monthly';
+			case 'everyOtherMonth':
+				return 'Every Other Month';
+			case 'every3Months':
+				return 'Every 3 Months';
+			case 'every4Months':
+				return 'Every 4 Months';
+			case 'twiceAYear':
+				return 'Twice Yearly';
+			case 'yearly':
+				return 'Yearly';
+			case 'everyOtherYear':
+				return 'Every Other Year';
+			default:
+				return frequency;
+		}
+	}
+
+	// MARK: - Date formatting
+
+	function convertToReadableDate(dateString: string) {
+		const date = new Date(dateString);
+		return date.toLocaleDateString(undefined, {
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric'
+		});
+	}
+
+	// MARK: - Relative date formatting
+
+	function getRelativeDate(dateString: string) {
+		const today = new Date();
+		const targetDate = new Date(dateString);
+		const diffTime = targetDate.getTime() - today.getTime();
+		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+		if (diffDays > 0) {
+			return `in ${diffDays} day${diffDays > 1 ? 's' : ''}`;
+		} else if (diffDays < 0) {
+			return `${Math.abs(diffDays)} day${Math.abs(diffDays) > 1 ? 's' : ''} ago`;
+		} else {
+			return 'today';
+		}
+	}
+
+	// MARK: - Amount formatting
+
+	function determineAmountStringFromBudgetCurrency(amount: number) {
+		const budgetCurrency = currentBudget?.currency_format?.iso_code || 'USD';
+		const formatter = new Intl.NumberFormat(undefined, {
+			style: 'currency',
+			currency: budgetCurrency
+		});
+		return formatter.format(amount / 1000);
+	}
+
+	// MARK: - Total of bills per month
+
+	let totalBillsPerMonth = $derived.by(() => {
+		const transactions = rawBills;
+		if (!transactions) return 0;
+
+		// Reduce bills to monthly based on frequency (e.g., weekly bills are multiplied by 4, yearly bills are divided by 12, etc.) and sum them up
+
+		const getFrequencyMultiplier = (transaction: { frequency: ScheduledTransactionFrequency }) => {
+			switch (transaction.frequency) {
+				case 'never':
+					return 0;
+				case 'daily':
+					return 30; // Approximate
+				case 'weekly':
+					return 4; // Approximate
+				case 'everyOtherWeek':
+					return 2; // Approximate
+				case 'twiceAMonth':
+					return 2;
+				case 'monthly':
+					return 1;
+				case 'everyOtherMonth':
+					return 0.5;
+				case 'every3Months':
+					return 1 / 3;
+				case 'every4Months':
+					return 0.25;
+				case 'twiceAYear':
+					return 2 / 12;
+				case 'yearly':
+					return 1 / 12;
+				case 'everyOtherYear':
+					return 0.5 / 12;
+				default:
+					return 0;
+			}
+		};
+
+		return transactions.reduce((total, transaction) => {
+			return total + transaction.amount * getFrequencyMultiplier(transaction);
+		}, 0);
+	});
+</script>
+
+<svelte:head>
+	<title>Budget | Bills (For YNAB)</title>
+</svelte:head>
+
+<main class="container">
+	{#if budgetId}
+		<!-- MARK: - Actions -->
+		<div class="actions">
+			<a href={resolve('/')}>Back to Budgets</a>
+			<button disabled={fetchingScheduledTransactions} onclick={getScheduledTransactionsForBudget}>
+				{fetchingScheduledTransactions ? 'Fetching...' : 'Fetch Scheduled Transactions'}
+			</button>
+			<button disabled={resettingData} onclick={resetDataForBudget}>
+				{resettingData ? 'Resetting...' : 'Reset Data'}
+			</button>
+		</div>
+		<!-- MARK: - Options -->
+		<div class="options">
+			<div>
+				<label for="sortby">Sort By:</label>
+				<select id="sortby" value={sortBy} onchange={(e) => setSortBy(e.currentTarget.value)}>
+					<option value="date_next">Next Due Date</option>
+					<option value="amount">Amount</option>
+				</select>
+			</div>
+			<div>
+				<label for="sortdirection">Sort Direction:</label>
+				<select
+					id="sortdirection"
+					value={sortDirection}
+					onchange={(e) => setSortDirection(e.currentTarget.value)}
+				>
+					<option value="asc">Ascending</option>
+					<option value="desc">Descending</option>
+				</select>
+			</div>
+		</div>
+		<!-- MARK: - Stats -->
+		<div class="stats">
+			<p>
+				Total Bills Per Month:
+				<strong>
+					{determineAmountStringFromBudgetCurrency(-totalBillsPerMonth)}
+				</strong>
+			</p>
+			<p>
+				Total Bills Per Year:
+				<strong>
+					{determineAmountStringFromBudgetCurrency(-totalBillsPerMonth * 12)}
+				</strong>
+			</p>
+		</div>
+		<!-- MARK: - Bills -->
+		<h1>Bills</h1>
+		<div class="bill-container">
+			{#each bills as bill (bill.id)}
+				<div class="bill">
+					<p>
+						{determineAmountStringFromBudgetCurrency(-bill.amount)} to
+						{bill.payee_name}
+					</p>
+					<ul class="bill-details">
+						<li>{parseFrequencyText(bill.frequency)}</li>
+						<li>{bill.category_name}</li>
+						<li>
+							<strong>
+								Due: {convertToReadableDate(bill.date_next)} ({getRelativeDate(bill.date_next)})
+							</strong>
+						</li>
+						<li>
+							<em>
+								First Paid On: {convertToReadableDate(bill.date_first)}
+							</em>
+						</li>
+					</ul>
+					<p>{bill.memo}</p>
+				</div>
+			{/each}
+		</div>
+	{/if}
+</main>
+
+<style>
+	.container {
+		gap: 4rem;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 2rem;
+	}
+	.bill {
+		border: 1px solid #ddd;
+		padding: 8px;
+		gap: 1px;
+	}
+	.bill-details {
+		list-style: none;
+		padding: 0;
+		margin: 0.5rem 0 0 1rem;
+	}
+	.bill-container {
+		display: grid;
+		gap: 16px;
+		grid-template-columns: repeat(4, minmax(200px, 1fr));
+	}
+	.actions {
+		display: flex;
+		gap: 16px;
+		align-items: center;
+	}
+	.options {
+		display: flex;
+		gap: 8px;
+	}
+	.stats {
+		display: flex;
+		gap: 16px;
+	}
+	@media screen and (max-width: 600px) {
+		.bill-container {
+			display: grid;
+			gap: 16px;
+			width: 100%;
+			grid-template-columns: 1fr;
+		}
+		.actions {
+			flex-direction: column;
+			width: 100%;
+		}
+		.actions a,
+		.actions button {
+			width: 100%;
+		}
+	}
+</style>

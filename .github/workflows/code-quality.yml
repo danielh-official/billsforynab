@@ -1,0 +1,53 @@
+name: Code Quality Checks
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+jobs:
+  quality-checks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Initial check
+        id: initial_check
+        continue-on-error: true
+        run: |
+          echo "=== Running bun format ==="
+          bun format
+
+          echo "=== Running bun lint --fix ==="
+          bun lint --fix
+
+          echo "=== Running bun check ==="
+          bun check
+
+      - name: Success message
+        if: steps.initial_check.outcome == 'success' || steps.attempt1.outcome == 'success' || steps.attempt2.outcome == 'success' || steps.attempt3.outcome == 'success'
+        run: |
+          echo "✅ Code quality checks passed!"
