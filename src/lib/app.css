@@ -96,6 +96,10 @@ button {
 		color: #121212;
 	}
 
+    a {
+        color: #90caf9;
+    }
+
 	a:hover {
 		text-decoration: underline;
 		color: white;
