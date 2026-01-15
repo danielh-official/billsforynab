@@ -141,7 +141,7 @@
 							<td>{budget.name}</td>
 							<td>{budget.is_default ? 'Yes' : 'No'}</td>
 							<td>
-								<a href={resolve(`/budget/${budget.id}`)}>View</a>
+								<a href={resolve(`/plan/${budget.id}`)}>View</a>
 							</td>
 						</tr>
 					{/each}
