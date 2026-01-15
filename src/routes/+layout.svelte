@@ -60,13 +60,14 @@
 	<p>
 		&copy; {new Date().getFullYear()} Bills (For YNAB). Built with
 		<a href="https://svelte.dev" target="_blank" rel="noopener noreferrer">SvelteKit</a>.
-		<br />
+        <!-- TODO: Determine favicon and add reference here if requires citation -->
+		<!-- <br />
 		<a
 			target="_blank"
 			rel="noopener noreferrer"
 			href="https://www.flaticon.com/free-icons/coin"
 			title="coin icons">Coin icons created by Ardiansyah - Flaticon</a
-		>
+		> -->
 	</p>
 	<p>
 		<a
