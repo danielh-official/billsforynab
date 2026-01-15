@@ -351,6 +351,103 @@
 
 <svelte:head>
 	<title>Budget | Bills (For YNAB)</title>
+
+	<!-- MARK: Styles -->
+
+	<style>
+		.container {
+			gap: 4rem;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			padding: 2rem;
+		}
+		.bill {
+			border: 1px solid #ddd;
+			padding: 8px;
+			gap: 1px;
+			position: relative;
+		}
+		.bill.excluded {
+			opacity: 0.5;
+			background-color: #f5f5f5;
+		}
+		.toggle-exclude {
+			position: absolute;
+			top: 8px;
+			right: 8px;
+			background: white;
+			border: 1px solid #ccc;
+			border-radius: 4px;
+			padding: 4px 8px;
+			cursor: pointer;
+			font-size: 14px;
+			transition: all 0.2s;
+		}
+		.toggle-exclude:hover {
+			background: #f0f0f0;
+		}
+		.bill-details {
+			list-style: none;
+			padding: 0;
+			margin: 0.5rem 0 0 1rem;
+		}
+		.bill-container {
+			display: grid;
+			gap: 16px;
+			grid-template-columns: repeat(4, minmax(200px, 1fr));
+		}
+		.actions {
+			display: flex;
+			gap: 16px;
+			align-items: center;
+		}
+		.options {
+			display: flex;
+			gap: 8px;
+		}
+		.stats {
+			display: flex;
+			gap: 16px;
+		}
+		.monthly-equivalent {
+			margin-bottom: 10px;
+		}
+		@media screen and (max-width: 600px) {
+			.bill-container {
+				display: grid;
+				gap: 16px;
+				width: 100%;
+				grid-template-columns: 1fr;
+			}
+			.actions {
+				flex-direction: column;
+				width: 100%;
+			}
+			.actions a,
+			.actions button {
+				width: 100%;
+			}
+		}
+
+        @media (prefers-color-scheme: dark) {
+            .bill {
+                border-color: #444;
+            }
+            .bill.excluded {
+                opacity: 0.25;
+                background-color: #000;
+            }
+            .toggle-exclude {
+                background: #222;
+                border-color: #555;
+                color: #eee;
+            }
+            .toggle-exclude:hover {
+                background: #333;
+            }
+	</style>
 </svelte:head>
 
 <main class="container">
@@ -443,81 +540,3 @@
 		</div>
 	{/if}
 </main>
-
-<style>
-	.container {
-		gap: 4rem;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		padding: 2rem;
-	}
-	.bill {
-		border: 1px solid #ddd;
-		padding: 8px;
-		gap: 1px;
-		position: relative;
-	}
-	.bill.excluded {
-		opacity: 0.5;
-		background-color: #f5f5f5;
-	}
-	.toggle-exclude {
-		position: absolute;
-		top: 8px;
-		right: 8px;
-		background: white;
-		border: 1px solid #ccc;
-		border-radius: 4px;
-		padding: 4px 8px;
-		cursor: pointer;
-		font-size: 14px;
-		transition: all 0.2s;
-	}
-	.toggle-exclude:hover {
-		background: #f0f0f0;
-	}
-	.bill-details {
-		list-style: none;
-		padding: 0;
-		margin: 0.5rem 0 0 1rem;
-	}
-	.bill-container {
-		display: grid;
-		gap: 16px;
-		grid-template-columns: repeat(4, minmax(200px, 1fr));
-	}
-	.actions {
-		display: flex;
-		gap: 16px;
-		align-items: center;
-	}
-	.options {
-		display: flex;
-		gap: 8px;
-	}
-	.stats {
-		display: flex;
-		gap: 16px;
-	}
-	.monthly-equivalent {
-		margin-bottom: 10px;
-	}
-	@media screen and (max-width: 600px) {
-		.bill-container {
-			display: grid;
-			gap: 16px;
-			width: 100%;
-			grid-template-columns: 1fr;
-		}
-		.actions {
-			flex-direction: column;
-			width: 100%;
-		}
-		.actions a,
-		.actions button {
-			width: 100%;
-		}
-	}
-</style>
