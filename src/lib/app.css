@@ -17,6 +17,9 @@ footer {
 	color: #666;
 	text-align: center;
 	padding: 1em;
+    max-width: 50rem;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 a {
