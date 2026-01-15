@@ -96,6 +96,7 @@
 			align-items: center;
 			justify-content: center;
 			padding: 2rem;
+            min-height: 90vh;
 		}
 		.table {
 			border-collapse: collapse;
