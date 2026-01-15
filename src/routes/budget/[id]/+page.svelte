@@ -88,7 +88,10 @@
 		const scheduledTransactions = responseData.data.scheduled_transactions.map(
 			(transaction: ScheduledTransactionDetail) => ({
 				...transaction,
-				budget_id: budgetIdValue
+				budget_id: budgetIdValue,
+				monthly_amount:
+					transaction.amount *
+					getFrequencyMultiplier(transaction.frequency as ScheduledTransactionFrequency)
 			})
 		);
 
@@ -145,15 +148,7 @@
 	// MARK: - Sorting options with URL query params
 
 	let sortBy = $derived.by(() => {
-		const sortColumn = $page.url.searchParams.get('sort_by');
-		const sortDirection = $page.url.searchParams.get('sort_direction');
-
-		if (sortColumn === 'amount' && (sortDirection === 'asc' || sortDirection === 'desc')) {
-			return 'amount';
-		}
-
-		// Default sorting is by next due date
-		return 'date_next';
+		return $page.url.searchParams.get('sort_by') ?? 'date_next';
 	});
 
 	function setSortBy(option: string) {
@@ -168,11 +163,7 @@
 	}
 
 	let sortDirection = $derived.by(() => {
-		const direction = $page.url.searchParams.get('sort_direction');
-		if (direction === 'asc' || direction === 'desc') {
-			return direction;
-		}
-		return 'asc';
+		return $page.url.searchParams.get('sort_direction') ?? 'asc';
 	});
 
 	function setSortDirection(direction: string) {
@@ -214,10 +205,16 @@
 				const dateB = new Date(b.date_next).getTime();
 				return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
 			});
-		} else if (sortBy === 'amount') {
-			return [...transactions].sort((a, b) =>
-				sortDirection === 'desc' ? a.amount - b.amount : b.amount - a.amount
-			);
+		} else if (sortBy === 'monthly_amount') {
+			return [...transactions].sort((a, b) => {
+				if (a.monthly_amount === undefined || b.monthly_amount === undefined) {
+					return 0; // If monthly_amount is missing, consider them equal for sorting
+				}
+
+				return sortDirection === 'desc'
+					? a.monthly_amount - b.monthly_amount
+					: b.monthly_amount - a.monthly_amount;
+			});
 		}
 
 		return transactions;
@@ -295,47 +292,59 @@
 		return formatter.format(amount / 1000);
 	}
 
+	// MARK: - Toggle exclude status
+
+	async function toggleExcluded(billId: string, currentExcluded: boolean) {
+		await db.scheduled_transactions.update(billId, {
+			excluded: !currentExcluded
+		});
+	}
+
+	// MARK: - Get frequency multiplier for monthly equivalent calculation
+
+	function getFrequencyMultiplier(frequency: ScheduledTransactionFrequency) {
+		switch (frequency) {
+			case 'never':
+				return 0;
+			case 'daily':
+				return 30; // Approximate
+			case 'weekly':
+				return 4; // Approximate
+			case 'everyOtherWeek':
+				return 2; // Approximate
+			case 'twiceAMonth':
+				return 2;
+			case 'monthly':
+				return 1;
+			case 'everyOtherMonth':
+				return 0.5;
+			case 'every3Months':
+				return 1 / 3;
+			case 'every4Months':
+				return 0.25;
+			case 'twiceAYear':
+				return 2 / 12;
+			case 'yearly':
+				return 1 / 12;
+			case 'everyOtherYear':
+				return 0.5 / 12;
+			default:
+				return 0;
+		}
+	}
+
 	// MARK: - Total of bills per month
 
 	let totalBillsPerMonth = $derived.by(() => {
 		const transactions = rawBills;
 		if (!transactions) return 0;
 
+		// Filter out excluded bills
+		const includedTransactions = transactions.filter((t) => !t.excluded);
+
 		// Reduce bills to monthly based on frequency (e.g., weekly bills are multiplied by 4, yearly bills are divided by 12, etc.) and sum them up
-
-		const getFrequencyMultiplier = (transaction: { frequency: ScheduledTransactionFrequency }) => {
-			switch (transaction.frequency) {
-				case 'never':
-					return 0;
-				case 'daily':
-					return 30; // Approximate
-				case 'weekly':
-					return 4; // Approximate
-				case 'everyOtherWeek':
-					return 2; // Approximate
-				case 'twiceAMonth':
-					return 2;
-				case 'monthly':
-					return 1;
-				case 'everyOtherMonth':
-					return 0.5;
-				case 'every3Months':
-					return 1 / 3;
-				case 'every4Months':
-					return 0.25;
-				case 'twiceAYear':
-					return 2 / 12;
-				case 'yearly':
-					return 1 / 12;
-				case 'everyOtherYear':
-					return 0.5 / 12;
-				default:
-					return 0;
-			}
-		};
-
-		return transactions.reduce((total, transaction) => {
-			return total + transaction.amount * getFrequencyMultiplier(transaction);
+		return includedTransactions.reduce((total, transaction) => {
+			return total + transaction.amount * getFrequencyMultiplier(transaction.frequency);
 		}, 0);
 	});
 </script>
@@ -362,7 +371,7 @@
 				<label for="sortby">Sort By:</label>
 				<select id="sortby" value={sortBy} onchange={(e) => setSortBy(e.currentTarget.value)}>
 					<option value="date_next">Next Due Date</option>
-					<option value="amount">Amount</option>
+					<option value="monthly_amount">Monthly Amount</option>
 				</select>
 			</div>
 			<div>
@@ -396,13 +405,26 @@
 		<h1>Bills</h1>
 		<div class="bill-container">
 			{#each bills as bill (bill.id)}
-				<div class="bill">
+				<div class="bill" class:excluded={bill.excluded}>
+					<button
+						class="toggle-exclude"
+						onclick={() => toggleExcluded(bill.id, bill.excluded ?? false)}
+						title={bill.excluded ? 'Include in calculations' : 'Exclude from calculations'}
+					>
+						{bill.excluded ? '👁️' : '✓'}
+					</button>
 					<p>
-						{determineAmountStringFromBudgetCurrency(-bill.amount)} to
+						{determineAmountStringFromBudgetCurrency(-bill.amount)} ({parseFrequencyText(
+							bill.frequency
+						)}) to
 						{bill.payee_name}
 					</p>
 					<ul class="bill-details">
-						<li>{parseFrequencyText(bill.frequency)}</li>
+						<li class="monthly-equivalent">
+							Monthly Equivalent: {determineAmountStringFromBudgetCurrency(
+								-(bill.monthly_amount ?? bill.amount * getFrequencyMultiplier(bill.frequency))
+							)}
+						</li>
 						<li>{bill.category_name}</li>
 						<li>
 							<strong>
@@ -435,6 +457,26 @@
 		border: 1px solid #ddd;
 		padding: 8px;
 		gap: 1px;
+		position: relative;
+	}
+	.bill.excluded {
+		opacity: 0.5;
+		background-color: #f5f5f5;
+	}
+	.toggle-exclude {
+		position: absolute;
+		top: 8px;
+		right: 8px;
+		background: white;
+		border: 1px solid #ccc;
+		border-radius: 4px;
+		padding: 4px 8px;
+		cursor: pointer;
+		font-size: 14px;
+		transition: all 0.2s;
+	}
+	.toggle-exclude:hover {
+		background: #f0f0f0;
 	}
 	.bill-details {
 		list-style: none;
@@ -458,6 +500,9 @@
 	.stats {
 		display: flex;
 		gap: 16px;
+	}
+	.monthly-equivalent {
+		margin-bottom: 10px;
 	}
 	@media screen and (max-width: 600px) {
 		.bill-container {

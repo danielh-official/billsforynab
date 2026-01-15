@@ -9,6 +9,8 @@ interface CustomBudgetDetail extends BudgetDetail {
 
 interface CustomScheduledTransactionDetail extends ScheduledTransactionDetail {
 	budget_id: string;
+	excluded?: boolean;
+	monthly_amount?: number;
 }
 
 const db = new Dexie('BillsForYnabDB') as Dexie & {
@@ -16,10 +18,10 @@ const db = new Dexie('BillsForYnabDB') as Dexie & {
 	scheduled_transactions: EntityTable<CustomScheduledTransactionDetail, 'id'>;
 };
 
-db.version(1).stores({
+db.version(2).stores({
 	budgets: 'id',
 	scheduled_transactions:
-		'id, budget_id, date_first, date_next, deleted, frequency, category_name, payee_name'
+		'id, budget_id, date_first, date_next, frequency, category_name, payee_name'
 });
 
 export type { CustomBudgetDetail, CustomScheduledTransactionDetail };
