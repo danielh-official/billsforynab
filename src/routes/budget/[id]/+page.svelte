@@ -357,7 +357,7 @@
 	{#if budgetId}
 		<!-- MARK: - Actions -->
 		<div class="actions">
-			<a href={resolve('/')}>Back to Budgets</a>
+			<a href={resolve('/')}>Back to Plans</a>
 			<button disabled={fetchingScheduledTransactions} onclick={getScheduledTransactionsForBudget}>
 				{fetchingScheduledTransactions ? 'Fetching...' : 'Fetch Scheduled Transactions'}
 			</button>

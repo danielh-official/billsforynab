@@ -1,6 +1,22 @@
 body {
 	font-family:
 		Gordita, Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+	min-height: 100vh;
+}
+
+main {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+}
+
+footer {
+	margin-top: 20rem;
+	font-size: 0.875rem;
+	color: #666;
+	text-align: center;
+	padding: 1em;
 }
 
 a {

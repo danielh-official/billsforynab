@@ -6,7 +6,7 @@ Thank you for choosing Bills (For YNAB) (referred to as “we,” “our,” or 
 
 ## Data Handling, Storage, and Security
 
-Bills uses the YNAB API to access and retrieve financial data from your YNAB account. This data includes but is not limited to budgeting information, transactions, accounts, and categories.
+Bills uses the YNAB API to access and retrieve financial data from your YNAB account. This data includes but is not limited to plan information and scheduled transactions.
 
 The data obtained through the YNAB API is used solely for the purpose of providing our services to you. It allows us to analyze and present your bill data. We will not use this data for any other purpose without your explicit consent.
 

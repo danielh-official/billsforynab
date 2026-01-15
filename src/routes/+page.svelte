@@ -96,7 +96,6 @@
 			align-items: center;
 			justify-content: center;
 			padding: 2rem;
-            min-height: 90vh;
 		}
 		.table {
 			border-collapse: collapse;
@@ -125,13 +124,13 @@
 	{#if authToken}
 		<p>Access token found. You are logged in.</p>
 		<button type="button" onclick={fetchBudgets} disabled={fetchingBudgets}>
-			{fetchingBudgets ? 'Fetching...' : 'Fetch Budgets'}
+			{fetchingBudgets ? 'Fetching...' : 'Fetch Plans'}
 		</button>
 		{#if $budgets}
 			<table class="table">
 				<thead>
 					<tr>
-						<th>Budget Name</th>
+						<th>Plan Name</th>
 						<th>Default</th>
 						<th>Actions</th>
 					</tr>
