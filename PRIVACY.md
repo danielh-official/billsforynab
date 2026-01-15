@@ -1,6 +1,6 @@
 # Privacy
 
-**Last Updated: December 22, 2025**
+**Last Updated: January 15, 2025**
 
 Thank you for choosing Bills (For YNAB) (referred to as “we,” “our,” or “us”). We are committed to protecting your privacy and handling your data with the utmost care. This privacy policy outlines how we handle, store, and secure the data obtained through the YNAB API to ensure your confidence and peace of mind while using our services.
 
