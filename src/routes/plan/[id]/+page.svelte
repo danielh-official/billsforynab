@@ -350,7 +350,7 @@
 </script>
 
 <svelte:head>
-	<title>Budget | Bills (For YNAB)</title>
+	<title>Plan | Bills (For YNAB)</title>
 
 	<!-- MARK: Styles -->
 
