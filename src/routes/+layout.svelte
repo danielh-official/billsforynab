@@ -31,6 +31,13 @@
 			justify-content: end;
 			align-items: center;
 		}
+
+		.footer-links {
+			display: flex;
+			gap: 1rem;
+			justify-content: center;
+			align-items: center;
+		}
 	</style>
 </svelte:head>
 
@@ -60,7 +67,7 @@
 	<p>
 		&copy; {new Date().getFullYear()} Bills (For YNAB). Built with
 		<a href="https://svelte.dev" target="_blank" rel="noopener noreferrer">SvelteKit</a>.
-        <!-- TODO: Determine favicon and add reference here if requires citation -->
+		<!-- TODO: Determine favicon and add reference here if requires citation -->
 		<!-- <br />
 		<a
 			target="_blank"
@@ -69,7 +76,7 @@
 			title="coin icons">Coin icons created by Ardiansyah - Flaticon</a
 		> -->
 	</p>
-	<p>
+	<p class="footer-links">
 		<a
 			target="_blank"
 			rel="noopener noreferrer"
