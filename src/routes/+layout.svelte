@@ -2,8 +2,13 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import '$lib/app.css';
 	import WorksWithYnab from '$lib/components/WorksWithYnab.svelte';
+	import { page } from '$app/state';
 
 	let { children } = $props();
+
+	const isDemo = $derived.by(() => {
+		return page.params.id === 'demo';
+	});
 </script>
 
 <svelte:head>
@@ -38,8 +43,49 @@
 			justify-content: center;
 			align-items: center;
 		}
+
+		.guide {
+			display: flex;
+			flex-direction: column;
+			align-items: end;
+			padding: 0 2rem 1rem 2rem;
+			font-size: 1rem;
+		}
+
+		.demo-banner {
+			background-color: #fffae6;
+			border: 1px solid #ffe58f;
+			color: #664d03;
+			padding: 1rem;
+			text-align: center;
+		}
+
+		.demo-banner-content {
+			display: flex;
+			flex-direction: column;
+			gap: 0.5rem;
+			max-width: 600px;
+			margin: 0 auto;
+		}
+
+		.demo-banner-header {
+			font-weight: bold;
+			font-size: 1.25rem;
+		}
 	</style>
 </svelte:head>
+
+{#if isDemo}
+	<div class="demo-banner">
+		<div class="demo-banner-content">
+			<div class="demo-banner-header">Demo</div>
+			<div>
+				You are currently viewing the demo plan. This plan does not receive or send any data from
+				YNAB. All data is generated for demonstration purposes only.
+			</div>
+		</div>
+	</div>
+{/if}
 
 <div class="logo">
 	<WorksWithYnab />
@@ -57,6 +103,17 @@
 	</div>
 
 	<small>(get 1 more month free)</small>
+</div>
+
+<div class="guide">
+	<div>Confused?</div>
+	<div>
+		Check out the <a
+			href="https://github.com/danielh-official/billsforynab/blob/main/GUIDE.md"
+			target="_blank"
+			rel="noopener noreferrer">guide</a
+		>.
+	</div>
 </div>
 
 <main>

@@ -300,7 +300,7 @@
 
 		if (
 			!confirm(
-				'Are you sure you want to reset the scheduled transactions data for this budget? This action cannot be undone.'
+				'Are you sure you want to reset the data for this plan? This action cannot be undone.'
 			)
 		) {
 			return;
@@ -525,7 +525,7 @@
 </script>
 
 <svelte:head>
-	<title>Plan | Bills (For YNAB)</title>
+	<title>Plan &mdash; {currentBudget?.name} | Bills (For YNAB)</title>
 
 	<!-- MARK: Styles -->
 
