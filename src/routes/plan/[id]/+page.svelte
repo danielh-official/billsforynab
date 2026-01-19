@@ -633,7 +633,7 @@
 		<div class="actions">
 			<a href={resolve('/')}>Back to Plans</a>
 			<button disabled={fetchingScheduledTransactions} onclick={getScheduledTransactionsForBudget}>
-				{fetchingScheduledTransactions ? 'Fetching...' : 'Fetch Scheduled Transactions'}
+				{fetchingScheduledTransactions ? 'Fetching...' : 'Fetch Data'}
 			</button>
 			<button disabled={resettingData} onclick={resetDataForBudget}>
 				{resettingData ? 'Resetting...' : 'Reset Data'}
