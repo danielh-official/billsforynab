@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { liveQuery } from 'dexie';
 	import type { ScheduledTransactionFrequency, ScheduledTransactionDetail } from 'ynab';
@@ -14,11 +14,11 @@
 	let budgetId = $state<string | null>(null);
 
 	const isDemo = $derived.by(() => {
-		return $page.params.id === 'demo';
+		return page.params.id === 'demo';
 	});
 
 	onMount(async () => {
-		const id = $page.params.id;
+		const id = page.params.id;
 
 		if (!id) {
 			goto(resolve('/'));
