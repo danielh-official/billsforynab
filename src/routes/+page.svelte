@@ -112,6 +112,16 @@
 			background-color: #f2f2f2;
 		}
 
+		.disclaimer {
+			max-width: 600px;
+			text-align: center;
+			font-size: 0.9rem;
+			color: #666;
+			display: flex;
+			flex-direction: column;
+			gap: 0.5rem;
+		}
+
 		@media (prefers-color-scheme: dark) {
 			.table th {
 				background-color: #444;
@@ -151,4 +161,14 @@
 	{:else}
 		<a data-sveltekit-reload href={authUrl}>Login With YNAB</a>
 	{/if}
+	<div class="disclaimer">
+		<div><strong>Disclaimer</strong>: All your data is stored locally on your browser.</div>
+		<div>
+			Also, this app is open-source. Click <a
+				href="https://github.com/danielh-official/billsforynab"
+				target="_blank"
+				rel="noopener noreferrer">here</a
+			> to view the source code.
+		</div>
+	</div>
 </div>
