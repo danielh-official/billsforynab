@@ -7,10 +7,15 @@
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import type { CustomBudgetDetail, CustomScheduledTransactionDetail } from '$lib/db';
+	import { SvelteDate } from 'svelte/reactivity';
 
 	// MARK: - Mount and budgetId extraction
 
 	let budgetId = $state<string | null>(null);
+
+	const isDemo = $derived.by(() => {
+		return $page.params.id === 'demo';
+	});
 
 	onMount(async () => {
 		const id = $page.params.id;
@@ -55,16 +60,190 @@
 
 		const budgetIdValue = budgetId;
 
-		// Get last knowledge of server
-		const lastKnowledgeOfServerForBudget = currentBudget?.scheduled_transactions_server_knowledge;
-
 		if (!budgetIdValue) {
 			console.error('Budget ID is missing.');
 			fetchingScheduledTransactions = false;
 			return;
 		}
 
+		if (isDemo) {
+			// For the demo budget, we will create realistic fake data instead of fetching from the API. This allows users to see how the app works without needing to connect their YNAB account or have any existing data in their account.
+
+			const fakeBills: CustomScheduledTransactionDetail[] = [
+				{
+					id: 'demo-bill-1',
+					budget_id: 'demo',
+					payee_name: 'Electric Company',
+					category_name: 'Utilities',
+					amount: -75000, // $75.00
+					frequency: 'monthly',
+					date_next: new SvelteDate(
+						new SvelteDate().setDate(new SvelteDate().getDate() + 5)
+					).toISOString(), // 5 days from now
+					date_first: new SvelteDate(
+						new SvelteDate().setMonth(new SvelteDate().getMonth() - 6)
+					).toISOString(), // 6 months ago
+					memo: 'Monthly electric bill',
+					monthly_amount: -75000,
+					account_id: 'demo-account-1',
+					account_name: 'Checking Account',
+					deleted: false,
+					subtransactions: []
+				},
+				{
+					id: 'demo-bill-2',
+					budget_id: 'demo',
+					payee_name: 'Water Company',
+					category_name: 'Utilities',
+					amount: -30000, // $30.00
+					frequency: 'monthly',
+					date_next: new SvelteDate(
+						new SvelteDate().setDate(new SvelteDate().getDate() + 10)
+					).toISOString(), // 10 days from now
+					date_first: new SvelteDate(
+						new SvelteDate().setMonth(new SvelteDate().getMonth() - 3)
+					).toISOString(), // 3 months ago
+					memo: 'Monthly water bill',
+					monthly_amount: -30000,
+					account_id: 'demo-account-1',
+					account_name: 'Checking Account',
+					deleted: false,
+					subtransactions: []
+				},
+				{
+					id: 'demo-bill-3',
+					budget_id: 'demo',
+					payee_name: 'Spotify',
+					category_name: 'Entertainment',
+					amount: -9990, // $9.99
+					frequency: 'monthly',
+					date_next: new SvelteDate(
+						new SvelteDate().setDate(new SvelteDate().getDate() + 2)
+					).toISOString(), // 2 days from now
+					date_first: new SvelteDate(
+						new SvelteDate().setMonth(new SvelteDate().getMonth() - 12)
+					).toISOString(), // 12 months ago
+					memo: 'Monthly Spotify subscription',
+					monthly_amount: -9990,
+					account_id: 'demo-account-1',
+					account_name: 'Checking Account',
+					deleted: false,
+					subtransactions: []
+				},
+				{
+					id: 'demo-bill-4',
+					budget_id: 'demo',
+					payee_name: 'Netflix',
+					category_name: 'Entertainment',
+					amount: -15900, // $15.90
+					frequency: 'monthly',
+					date_next: new SvelteDate(
+						new SvelteDate().setDate(new SvelteDate().getDate() + 15)
+					).toISOString(), // 15 days from now
+					date_first: new SvelteDate(
+						new SvelteDate().setMonth(new SvelteDate().getMonth() - 8)
+					).toISOString(), // 8 months ago
+					memo: 'Monthly Netflix subscription',
+					monthly_amount: -15900,
+					account_id: 'demo-account-1',
+					account_name: 'Checking Account',
+					deleted: false,
+					subtransactions: []
+				},
+				{
+					id: 'demo-bill-5',
+					budget_id: 'demo',
+					payee_name: 'Gym Membership',
+					category_name: 'Health & Fitness',
+					amount: -45000, // $45.00
+					frequency: 'monthly',
+					date_next: new SvelteDate(
+						new SvelteDate().setDate(new SvelteDate().getDate() + 20)
+					).toISOString(), // 20 days from now
+					date_first: new SvelteDate(
+						new SvelteDate().setMonth(new SvelteDate().getMonth() - 4)
+					).toISOString(), // 4 months ago
+					memo: 'Monthly gym membership fee',
+					monthly_amount: -45000,
+					account_id: 'demo-account-1',
+					account_name: 'Checking Account',
+					deleted: false,
+					subtransactions: []
+				},
+				{
+					id: 'demo-bill-6',
+					budget_id: 'demo',
+					payee_name: 'Car Insurance',
+					category_name: 'Auto & Transport',
+					amount: -120000, // $120.00
+					frequency: 'everyOtherMonth',
+					date_next: new SvelteDate(
+						new SvelteDate().setDate(new SvelteDate().getDate() + 25)
+					).toISOString(), // 25 days from now
+					date_first: new SvelteDate(
+						new SvelteDate().setMonth(new SvelteDate().getMonth() - 10)
+					).toISOString(), // 10 months ago
+					memo: 'Bi-monthly car insurance payment',
+					monthly_amount: -60000, // Monthly equivalent for bi-monthly payment
+					account_id: 'demo-account-1',
+					account_name: 'Checking Account',
+					deleted: false,
+					subtransactions: []
+				},
+				{
+					id: 'demo-bill-7',
+					budget_id: 'demo',
+					payee_name: 'Credit Card',
+					category_name: 'Credit Card',
+					amount: -200000, // $200.00
+					frequency: 'monthly',
+					date_next: new SvelteDate(
+						new SvelteDate().setDate(new SvelteDate().getDate() + 7)
+					).toISOString(), // 7 days from now
+					date_first: new SvelteDate(
+						new SvelteDate().setMonth(new SvelteDate().getMonth() - 6)
+					).toISOString(), // 6 months ago
+					memo: 'Monthly credit card payment',
+					monthly_amount: -200000,
+					account_id: 'demo-account-1',
+					account_name: 'Checking Account',
+					deleted: false,
+					subtransactions: []
+				},
+				// yearly
+				{
+					id: 'demo-bill-8',
+					budget_id: 'demo',
+					payee_name: 'Car Registration',
+					category_name: 'Auto & Transport',
+					amount: -60000, // $60.00
+					frequency: 'yearly',
+					date_next: new SvelteDate(
+						new SvelteDate().setDate(new SvelteDate().getDate() + 30)
+					).toISOString(), // 30 days from now
+					date_first: new SvelteDate(
+						new SvelteDate().setFullYear(new SvelteDate().getFullYear() - 2)
+					).toISOString(), // 2 years ago
+					memo: 'Yearly car registration fee',
+					monthly_amount: -5000, // Monthly equivalent for yearly payment
+					account_id: 'demo-account-1',
+					account_name: 'Checking Account',
+					deleted: false,
+					subtransactions: []
+				}
+			];
+
+			await db.scheduled_transactions.bulkPut(fakeBills);
+
+			fetchingScheduledTransactions = false;
+
+			return;
+		}
+
 		let endpoint = `https://api.ynab.com/v1/budgets/${budgetIdValue}/scheduled_transactions?budget_id=${budgetIdValue}`;
+
+		// Get last knowledge of server
+		const lastKnowledgeOfServerForBudget = currentBudget?.scheduled_transactions_server_knowledge;
 
 		if (lastKnowledgeOfServerForBudget) {
 			endpoint += `&last_knowledge_of_server=${lastKnowledgeOfServerForBudget}`;
@@ -380,6 +559,7 @@
 			cursor: pointer;
 			font-size: 14px;
 			transition: all 0.2s;
+			color: #333;
 		}
 		.toggle-exclude:hover {
 			background: #f0f0f0;

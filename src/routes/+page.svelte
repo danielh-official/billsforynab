@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { db } from '$lib/db';
+	import { db, type CustomBudgetDetail } from '$lib/db';
 	import { liveQuery } from 'dexie';
 	import { page } from '$app/state';
 	import type { BudgetDetail, BudgetSummaryResponse } from 'ynab/dist/models';
@@ -81,9 +81,46 @@
 		setFetchingBudgets(false);
 	}
 
-	// YAGNI approach for now: just load first 10 budgets. If I seriously have users who want to work with all 1 bajillion of their budgets, then I'll implement more robust pagination and search features.
+	const budgets = liveQuery(() => db.budgets.orderBy('id').toArray());
 
-	const budgets = liveQuery(() => db.budgets.orderBy('id').limit(10).toArray());
+	function createDemoPlan() {
+		const demoBudget: CustomBudgetDetail = {
+			id: 'demo',
+			name: 'Demo',
+			last_modified_on: new Date().toISOString(),
+			first_month: new Date().toISOString().substring(0, 7),
+			last_month: new Date().toISOString().substring(0, 7),
+			is_default: false
+		};
+
+		db.budgets.put(demoBudget);
+	}
+
+	let demoBudgetAlreadyExists = $derived.by(() => {
+		if ($budgets) {
+			return $budgets.some((b) => b.id === 'demo');
+		}
+		return false;
+	});
+
+	function deleteBudget(id: string) {
+		if (confirm('Are you sure you want to delete this plan? This action cannot be undone.')) {
+			db.budgets.delete(id);
+
+			// Find all scheduled transactions associated with this budget and delete them
+			db.scheduled_transactions
+				.where('budget_id')
+				.equals(id)
+				.toArray()
+				.then((transactions) => {
+					const deletePromises = transactions.map((tx) => db.scheduled_transactions.delete(tx.id));
+					return Promise.all(deletePromises);
+				})
+				.catch((error) => {
+					console.error('Failed to delete scheduled transactions for budget:', error);
+				});
+		}
+	}
 </script>
 
 <svelte:head>
@@ -122,6 +159,57 @@
 			gap: 0.5rem;
 		}
 
+		.fetch-budgets-button {
+			padding: 0.5rem 1rem;
+			font-size: 1rem;
+			cursor: pointer;
+		}
+
+		.fetch-budgets-button:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+
+		.create-demo-plan-button {
+			padding: 0em 0em;
+			background-color: transparent;
+			color: blue;
+			border: none;
+			border-radius: none;
+			cursor: pointer;
+			font-size: 1rem;
+		}
+
+		.create-demo-plan-button:hover {
+			text-decoration: underline;
+		}
+
+		.create-demo-plan-button:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+			text-decoration: none;
+			color: gray;
+		}
+
+		.row-actions {
+			display: flex;
+			gap: 0.5rem;
+			justify-content: center;
+		}
+
+		.delete-budget-button {
+			padding: 0rem 0rem;
+			font-size: 1rem;
+			cursor: pointer;
+			background-color: transparent;
+			color: #ff4d4f;
+			border: none;
+		}
+
+		.delete-budget-button:hover {
+			text-decoration: underline;
+		}
+
 		@media (prefers-color-scheme: dark) {
 			.table th {
 				background-color: #444;
@@ -133,33 +221,55 @@
 <div class="container">
 	{#if authToken}
 		<p>Access token found. You are logged in.</p>
-		<button type="button" onclick={fetchBudgets} disabled={fetchingBudgets}>
-			{fetchingBudgets ? 'Fetching...' : 'Fetch Plans'}
-		</button>
-		{#if $budgets}
-			<table class="table">
-				<thead>
-					<tr>
-						<th>Plan Name</th>
-						<th>Default</th>
-						<th>Actions</th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each $budgets as budget (budget.id)}
-						<tr>
-							<td>{budget.name}</td>
-							<td>{budget.is_default ? 'Yes' : 'No'}</td>
-							<td>
-								<a href={resolve(`/plan/${budget.id}`)}>View</a>
-							</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		{/if}
 	{:else}
 		<a data-sveltekit-reload href={authUrl}>Login With YNAB</a>
+	{/if}
+	<button
+		class="fetch-budgets-button"
+		type="button"
+		onclick={fetchBudgets}
+		disabled={fetchingBudgets || !authToken}
+	>
+		{fetchingBudgets ? 'Fetching...' : 'Fetch Plans'}
+	</button>
+	{#if !demoBudgetAlreadyExists}
+		<div>
+			On the fence? Click <button
+				type="button"
+				onclick={createDemoPlan}
+				class="create-demo-plan-button"
+				disabled={demoBudgetAlreadyExists}>here</button
+			> to create a demo plan and try the tutorial. No YNAB account required!
+		</div>
+	{:else}
+		<div>
+			You already have a demo plan. Click <a href={resolve('/plan/demo')}>here</a> to view it.
+		</div>
+	{/if}
+	{#if $budgets}
+		<table class="table">
+			<thead>
+				<tr>
+					<th>Plan Name</th>
+					<th>Default</th>
+					<th>Actions</th>
+				</tr>
+			</thead>
+			<tbody>
+				{#each $budgets as budget (budget.id)}
+					<tr>
+						<td>{budget.name}</td>
+						<td>{budget.is_default ? 'Yes' : 'No'}</td>
+						<td class="row-actions">
+							<a href={resolve(`/plan/${budget.id}`)}>View</a>
+							<button class="delete-budget-button" onclick={() => deleteBudget(budget.id)}>
+								Delete
+							</button>
+						</td>
+					</tr>
+				{/each}
+			</tbody>
+		</table>
 	{/if}
 	<div class="disclaimer">
 		<div><strong>Disclaimer</strong>: All your data is stored locally on your browser.</div>
