@@ -7,7 +7,6 @@
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import type { CustomBudgetDetail, CustomScheduledTransactionDetail } from '$lib/db';
-	import { SvelteURLSearchParams } from 'svelte/reactivity';
 
 	// MARK: - Mount and budgetId extraction
 
@@ -145,34 +144,31 @@
 			});
 	}
 
-	// MARK: - Sorting options with URL query params
+	// MARK: - Sorting options with localStorage persistence
 
-	let sortBy = $derived.by(() => {
-		return $page.url.searchParams.get('sort_by') ?? 'date_next';
+	let sortBy = $state('date_next');
+	let sortDirection = $state('asc');
+
+	onMount(() => {
+		if (typeof localStorage === 'undefined') return;
+
+		const storedSortBy = localStorage.getItem('sort_by');
+		const storedSortDirection = localStorage.getItem('sort_direction');
+
+		if (storedSortBy === 'date_next' || storedSortBy === 'monthly_amount') {
+			sortBy = storedSortBy;
+		}
+
+		if (storedSortDirection === 'asc' || storedSortDirection === 'desc') {
+			sortDirection = storedSortDirection;
+		}
 	});
 
-	function setSortBy(option: string) {
-		const currentSortDirection = $page.url.searchParams.get('sort_direction');
-		const newDirection = sortBy === option && currentSortDirection === 'asc' ? 'desc' : 'asc';
-
-		const params = new SvelteURLSearchParams($page.url.searchParams);
-		params.set('sort_by', option);
-		params.set('sort_direction', newDirection);
-		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		goto(`?${params.toString()}`, { replaceState: true });
-	}
-
-	let sortDirection = $derived.by(() => {
-		return $page.url.searchParams.get('sort_direction') ?? 'asc';
+	$effect(() => {
+		if (typeof localStorage === 'undefined') return;
+		localStorage.setItem('sort_by', sortBy);
+		localStorage.setItem('sort_direction', sortDirection);
 	});
-
-	function setSortDirection(direction: string) {
-		const params = new SvelteURLSearchParams($page.url.searchParams);
-		params.set('sort_by', sortBy);
-		params.set('sort_direction', direction);
-		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		goto(`?${params.toString()}`, { replaceState: true });
-	}
 
 	// MARK: - Bills list with live updates from IndexedDB
 
@@ -431,22 +427,23 @@
 			}
 		}
 
-        @media (prefers-color-scheme: dark) {
-            .bill {
-                border-color: #444;
-            }
-            .bill.excluded {
-                opacity: 0.25;
-                background-color: #000;
-            }
-            .toggle-exclude {
-                background: #222;
-                border-color: #555;
-                color: #eee;
-            }
-            .toggle-exclude:hover {
-                background: #333;
-            }
+		@media (prefers-color-scheme: dark) {
+			.bill {
+				border-color: #444;
+			}
+			.bill.excluded {
+				opacity: 0.25;
+				background-color: #000;
+			}
+			.toggle-exclude {
+				background: #222;
+				border-color: #555;
+				color: #eee;
+			}
+			.toggle-exclude:hover {
+				background: #333;
+			}
+		}
 	</style>
 </svelte:head>
 
@@ -465,19 +462,15 @@
 		<!-- MARK: - Options -->
 		<div class="options">
 			<div>
-				<label for="sortby">Sort By:</label>
-				<select id="sortby" value={sortBy} onchange={(e) => setSortBy(e.currentTarget.value)}>
+				<label for="sort_by">Sort By:</label>
+				<select id="sort_by" bind:value={sortBy}>
 					<option value="date_next">Next Due Date</option>
 					<option value="monthly_amount">Monthly Amount</option>
 				</select>
 			</div>
 			<div>
-				<label for="sortdirection">Sort Direction:</label>
-				<select
-					id="sortdirection"
-					value={sortDirection}
-					onchange={(e) => setSortDirection(e.currentTarget.value)}
-				>
+				<label for="sort_direction">Sort Direction:</label>
+				<select id="sort_direction" bind:value={sortDirection}>
 					<option value="asc">Ascending</option>
 					<option value="desc">Descending</option>
 				</select>
