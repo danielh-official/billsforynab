@@ -24,7 +24,7 @@
 
 		const redirectUri = `${currentUrl}/callback`;
 
-		return `https://app.ynab.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token`;
+		return `https://app.ynab.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=read-only`;
 	});
 
 	let authToken = $derived.by(() => {
