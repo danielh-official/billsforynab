@@ -11,6 +11,7 @@ interface CustomScheduledTransactionDetail extends ScheduledTransactionDetail {
 	budget_id: string;
 	excluded?: boolean;
 	monthly_amount?: number;
+    published?: boolean;
 }
 
 const db = new Dexie('BillsForYnabDB') as Dexie & {
