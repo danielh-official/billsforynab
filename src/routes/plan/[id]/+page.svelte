@@ -18,6 +18,11 @@
 		return page.params.id === 'demo';
 	});
 
+	const allowsBothReadAndWriteAccess = $derived.by(() => {
+		const ynabTokenWrite = sessionStorage.getItem('ynab_token_write');
+		return ynabTokenWrite === 'true';
+	});
+
 	onMount(async () => {
 		const id = page.params.id;
 
@@ -561,10 +566,12 @@
 			opacity: 0.5;
 			background-color: #f5f5f5;
 		}
+		.bill-actions {
+			display: flex;
+			gap: 8px;
+			justify-content: flex-end;
+		}
 		.toggle-exclude {
-			position: absolute;
-			top: 8px;
-			right: 8px;
 			background: white;
 			border: 1px solid #ccc;
 			border-radius: 4px;
@@ -575,6 +582,32 @@
 			color: #333;
 		}
 		.toggle-exclude:hover {
+			background: #f0f0f0;
+		}
+		.delete-bill-button {
+			background: white;
+			border: 1px solid #ccc;
+			border-radius: 4px;
+			padding: 4px 8px;
+			cursor: pointer;
+			font-size: 14px;
+			transition: all 0.2s;
+			color: #333;
+		}
+		.delete-bill-button:hover {
+			background: #f0f0f0;
+		}
+		.edit-bill-button {
+			background: white;
+			border: 1px solid #ccc;
+			border-radius: 4px;
+			padding: 4px 8px;
+			cursor: pointer;
+			font-size: 14px;
+			transition: all 0.2s;
+			color: #333;
+		}
+		.edit-bill-button:hover {
 			background: #f0f0f0;
 		}
 		.bill-details {
@@ -603,6 +636,11 @@
 		.monthly-equivalent {
 			margin-bottom: 10px;
 		}
+		.create-bill-button:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+
 		@media screen and (max-width: 600px) {
 			.bill-container {
 				display: grid;
@@ -653,6 +691,18 @@
 			<button disabled={resettingData} onclick={resetDataForBudget}>
 				{resettingData ? 'Resetting...' : 'Reset Data'}
 			</button>
+			{#if allowsBothReadAndWriteAccess}
+				<!-- Button for creating bills; should only be available if user has write permissions for active token; opens a modal for creating a new bill -->
+				<!-- TODO -->
+				<button
+					class="create-bill-button"
+					disabled={!allowsBothReadAndWriteAccess}
+					data-tooltip={allowsBothReadAndWriteAccess
+						? null
+						: 'You need write access to create bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
+					>Create Bill</button
+				>
+			{/if}
 		</div>
 		<!-- MARK: - Options -->
 		<div class="options">
@@ -691,13 +741,39 @@
 		<div class="bill-container">
 			{#each bills as bill (bill.id)}
 				<div class="bill" class:excluded={bill.excluded}>
-					<button
-						class="toggle-exclude"
-						onclick={() => toggleExcluded(bill.id, bill.excluded ?? false)}
-						title={bill.excluded ? 'Include in calculations' : 'Exclude from calculations'}
-					>
-						{bill.excluded ? '👁️' : '✓'}
-					</button>
+					<div class="bill-actions">
+						<button
+							class="toggle-exclude"
+							onclick={() => toggleExcluded(bill.id, bill.excluded ?? false)}
+							title={bill.excluded ? 'Include in calculations' : 'Exclude from calculations'}
+						>
+							{bill.excluded ? '👁️' : '✓'}
+						</button>
+						{#if allowsBothReadAndWriteAccess}
+							<!-- Button for updating bill; only available when access token has write permissions -->
+							<!-- TODO -->
+							<button
+								class="edit-bill-button"
+								disabled={!allowsBothReadAndWriteAccess}
+								data-tooltip={allowsBothReadAndWriteAccess
+									? null
+									: 'You need write access to edit bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
+							>
+								✏️
+							</button>
+							<!-- Button for deleting bill with confirmation prompt; only available when access token has write permissions -->
+							<!-- TODO -->
+							<button
+								class="delete-bill-button"
+								disabled={!allowsBothReadAndWriteAccess}
+								data-tooltip={allowsBothReadAndWriteAccess
+									? null
+									: 'You need write access to delete bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
+							>
+								🗑️
+							</button>
+						{/if}
+					</div>
 					<p>
 						{determineAmountStringFromBudgetCurrency(-bill.amount)} ({parseFrequencyText(
 							bill.frequency
