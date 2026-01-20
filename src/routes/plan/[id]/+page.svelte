@@ -8,6 +8,7 @@
 	import { resolve } from '$app/paths';
 	import type { CustomBudgetDetail, CustomScheduledTransactionDetail } from '$lib/db';
 	import { SvelteDate } from 'svelte/reactivity';
+	import Toast from '$lib/components/Toast.svelte';
 
 	// MARK: - Mount and budgetId extraction
 
@@ -54,6 +55,9 @@
 	// MARK: - Fetching scheduled transactions for budget
 
 	let fetchingScheduledTransactions = $state(false);
+	let toastVisible = $state(false);
+	let toastMessage = $state('');
+	let toastType: 'success' | 'error' | 'info' = $state('info');
 
 	async function getScheduledTransactionsForBudget() {
 		fetchingScheduledTransactions = true;
@@ -256,7 +260,16 @@
 		});
 
 		if (!response.ok) {
-			console.error('Failed to fetch scheduled transactions:', response.statusText);
+			console.error('Failed to fetch data:', response.statusText);
+
+			if (response.status === 401) {
+				toastMessage = 'Unauthorized. Please login again at the home page.';
+			} else {
+				toastMessage = `Failed to fetch data: ${response.statusText}`;
+			}
+
+			toastType = 'error';
+			toastVisible = true;
 			fetchingScheduledTransactions = false;
 			return;
 		}
@@ -626,6 +639,8 @@
 		}
 	</style>
 </svelte:head>
+
+<Toast message={toastMessage} type={toastType} bind:visible={toastVisible} />
 
 <main class="container">
 	{#if budgetId}
