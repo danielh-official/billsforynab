@@ -272,7 +272,10 @@
 		</table>
 	{/if}
 	<div class="disclaimer">
-		<div><strong>Disclaimer</strong>: This app stores your data locally in your browser. Data is fetched directly from YNAB using your API token and is not stored on our servers.</div>
+		<div>
+			<strong>Disclaimer</strong>: This app stores your data locally in your browser. Data is
+			fetched directly from YNAB using your API token and is not stored on our servers.
+		</div>
 		<div>
 			Also, this app is open-source. Click <a
 				href="https://github.com/danielh-official/billsforynab"
