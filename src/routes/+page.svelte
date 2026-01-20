@@ -61,7 +61,7 @@
 
 		setFetchingBudgets(true);
 
-		const budgetsResponse = await fetch('https://api.ynab.com/v1/budgets', {
+		const budgetsResponse = await fetch('https://api.ynab.com/v1/budgets?include_accounts=true', {
 			headers: {
 				Authorization: `Bearer ${authToken}`
 			}

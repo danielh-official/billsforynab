@@ -2,12 +2,18 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { liveQuery } from 'dexie';
-	import type { ScheduledTransactionFrequency, ScheduledTransactionDetail } from 'ynab';
+	import type {
+		ScheduledTransactionFrequency,
+		ScheduledTransactionDetail,
+		Account,
+		PutScheduledTransactionWrapper,
+		PostScheduledTransactionWrapper
+	} from 'ynab';
 	import { db } from '$lib/db';
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import type { CustomBudgetDetail, CustomScheduledTransactionDetail } from '$lib/db';
-	import { SvelteDate } from 'svelte/reactivity';
+	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 	import Toast from '$lib/components/Toast.svelte';
 
 	// MARK: - Mount and budgetId extraction
@@ -45,6 +51,10 @@
 
 	let currentBudget = $state<CustomBudgetDetail | null>(null);
 
+	let availableAccounts = $derived.by(() => {
+		return currentBudget?.accounts ?? [];
+	});
+
 	$effect(() => {
 		if (!budgetId) return;
 
@@ -64,6 +74,65 @@
 	let toastMessage = $state('');
 	let toastType: 'success' | 'error' | 'info' = $state('info');
 
+	// MARK: - Bill creation/editing modal state
+
+	let showBillModal = $state(false);
+	let editingBillId = $state<string | null>(null);
+	let billFormData = $state({
+		payee_name: '',
+		account_id: '',
+		date: '',
+		amount: 0,
+		memo: '',
+		frequency: 'monthly' as ScheduledTransactionFrequency,
+		published: false
+	});
+
+	function openBillModal(bill?: CustomScheduledTransactionDetail) {
+		if (bill) {
+			// Pre-fill modal with existing bill data for editing
+			editingBillId = bill.id;
+			billFormData = {
+				payee_name: bill.payee_name || '',
+				account_id: bill.account_id,
+				date: bill.date_next.split('T')[0],
+				amount: Math.abs(bill.amount) / 1000,
+				memo: bill.memo || '',
+				frequency: bill.frequency as ScheduledTransactionFrequency,
+				published: bill.published ?? false
+			};
+		} else {
+			// Reset for new bill creation
+			editingBillId = null;
+			billFormData = {
+				payee_name: '',
+				account_id: '',
+				date: new Date().toISOString().split('T')[0],
+				amount: 0,
+				memo: '',
+				frequency: 'monthly',
+				published: false
+			};
+		}
+		showBillModal = true;
+	}
+
+	function closeBillModal() {
+		showBillModal = false;
+		editingBillId = null;
+		billFormData = {
+			payee_name: '',
+			account_id: '',
+			date: '',
+			amount: 0,
+			memo: '',
+			frequency: 'monthly',
+			published: false
+		};
+	}
+
+	// MARK: - Fetch scheduled transactions for budget
+
 	async function getScheduledTransactionsForBudget() {
 		fetchingScheduledTransactions = true;
 
@@ -74,6 +143,8 @@
 			fetchingScheduledTransactions = false;
 			return;
 		}
+
+		// MARK: - Demo budget handling
 
 		if (isDemo) {
 			// For the demo budget, we will create realistic fake data instead of fetching from the API. This allows users to see how the app works without needing to connect their YNAB account or have any existing data in their account.
@@ -97,6 +168,7 @@
 					account_id: 'demo-account-1',
 					account_name: 'Checking Account',
 					deleted: false,
+					published: true,
 					subtransactions: []
 				},
 				{
@@ -117,6 +189,7 @@
 					account_id: 'demo-account-1',
 					account_name: 'Checking Account',
 					deleted: false,
+					published: true,
 					subtransactions: []
 				},
 				{
@@ -137,6 +210,7 @@
 					account_id: 'demo-account-1',
 					account_name: 'Checking Account',
 					deleted: false,
+					published: true,
 					subtransactions: []
 				},
 				{
@@ -157,6 +231,7 @@
 					account_id: 'demo-account-1',
 					account_name: 'Checking Account',
 					deleted: false,
+					published: true,
 					subtransactions: []
 				},
 				{
@@ -177,6 +252,7 @@
 					account_id: 'demo-account-1',
 					account_name: 'Checking Account',
 					deleted: false,
+					published: true,
 					subtransactions: []
 				},
 				{
@@ -197,6 +273,7 @@
 					account_id: 'demo-account-1',
 					account_name: 'Checking Account',
 					deleted: false,
+					published: true,
 					subtransactions: []
 				},
 				{
@@ -217,6 +294,7 @@
 					account_id: 'demo-account-1',
 					account_name: 'Checking Account',
 					deleted: false,
+					published: true,
 					subtransactions: []
 				},
 				// yearly
@@ -238,6 +316,7 @@
 					account_id: 'demo-account-1',
 					account_name: 'Checking Account',
 					deleted: false,
+					published: true,
 					subtransactions: []
 				}
 			];
@@ -285,6 +364,7 @@
 			(transaction: ScheduledTransactionDetail) => ({
 				...transaction,
 				budget_id: budgetIdValue,
+				published: true,
 				monthly_amount:
 					transaction.amount *
 					getFrequencyMultiplier(transaction.frequency as ScheduledTransactionFrequency)
@@ -345,6 +425,10 @@
 
 	let sortBy = $state('date_next');
 	let sortDirection = $state('asc');
+
+	// MARK: - Loading state for async bill operations
+
+	let billsBeingSynced = $state(new Set<string>());
 
 	onMount(() => {
 		if (typeof localStorage === 'undefined') return;
@@ -493,6 +577,15 @@
 		});
 	}
 
+	// MARK: - Compute monthly equivalent
+
+	function computeMonthlyAmount(
+		amountMilliunits: number,
+		frequency: ScheduledTransactionFrequency
+	) {
+		return amountMilliunits * getFrequencyMultiplier(frequency);
+	}
+
 	// MARK: - Get frequency multiplier for monthly equivalent calculation
 
 	function getFrequencyMultiplier(frequency: ScheduledTransactionFrequency) {
@@ -540,6 +633,440 @@
 			return total + transaction.amount * getFrequencyMultiplier(transaction.frequency);
 		}, 0);
 	});
+
+	// MARK: - Create bill in YNAB
+
+	interface CustomScheduledTransactionPayload {
+		payee_name: string | null;
+		account_id: string;
+		date: string;
+		amount: number;
+		memo: string | null;
+		frequency: ScheduledTransactionFrequency;
+	}
+
+	async function createBillInYNAB(
+		billData: CustomScheduledTransactionPayload
+	): Promise<{ success: boolean; id?: string; error?: string }> {
+		const budgetIdValue = budgetId;
+		if (!budgetIdValue) {
+			return { success: false, error: 'Budget ID is missing' };
+		}
+
+		const accessToken = sessionStorage.getItem('ynab_access_token');
+		if (!accessToken) {
+			return { success: false, error: 'No access token found' };
+		}
+
+		// Prepare payload for YNAB API - convert amount from milliunits to milliunits if needed
+		const payload: PostScheduledTransactionWrapper = {
+			scheduled_transaction: {
+				account_id: billData.account_id,
+				payee_name: billData.payee_name || null,
+				frequency: billData.frequency || 'monthly',
+				amount: billData.amount,
+				memo: billData.memo || null,
+				date: billData.date
+			}
+		};
+
+		try {
+			const response = await fetch(
+				`https://api.ynab.com/v1/budgets/${budgetIdValue}/scheduled_transactions`,
+				{
+					method: 'POST',
+					headers: {
+						Authorization: `Bearer ${accessToken}`,
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify(payload)
+				}
+			);
+
+			if (response.status === 401) {
+				sessionStorage.removeItem('ynab_access_token');
+				return { success: false, error: 'Unauthorized. Please login again.' };
+			}
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				console.error('Failed to create bill in YNAB:', errorData);
+				return { success: false, error: `Failed to create bill: ${response.statusText}` };
+			}
+
+			const responseData = await response.json();
+			const newId = responseData.data.scheduled_transaction.id;
+
+			return { success: true, id: newId };
+		} catch (error) {
+			console.error('Error creating bill in YNAB:', error);
+			return { success: false, error: 'Network error creating bill' };
+		}
+	}
+
+	// MARK: - Update bill in YNAB
+
+	async function updateBillInYNAB(
+		billId: string,
+		billData: CustomScheduledTransactionPayload
+	): Promise<{ success: boolean; error?: string }> {
+		const budgetIdValue = budgetId;
+		if (!budgetIdValue) {
+			return { success: false, error: 'Budget ID is missing' };
+		}
+
+		const accessToken = sessionStorage.getItem('ynab_access_token');
+		if (!accessToken) {
+			return { success: false, error: 'No access token found' };
+		}
+
+		const payload: PutScheduledTransactionWrapper = {
+			scheduled_transaction: {
+				account_id: billData.account_id,
+				payee_name: billData.payee_name || null,
+				frequency: billData.frequency || 'monthly',
+				amount: billData.amount,
+				memo: billData.memo || null,
+				date: billData.date
+			}
+		};
+
+		try {
+			const response = await fetch(
+				`https://api.ynab.com/v1/budgets/${budgetIdValue}/scheduled_transactions/${billId}`,
+				{
+					method: 'PUT',
+					headers: {
+						Authorization: `Bearer ${accessToken}`,
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify(payload)
+				}
+			);
+
+			if (response.status === 401) {
+				sessionStorage.removeItem('ynab_access_token');
+				return { success: false, error: 'Unauthorized. Please login again.' };
+			}
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				console.error('Failed to update bill in YNAB:', errorData);
+				return { success: false, error: `Failed to update bill: ${response.statusText}` };
+			}
+
+			return { success: true };
+		} catch (error) {
+			console.error('Error updating bill in YNAB:', error);
+			return { success: false, error: 'Network error updating bill' };
+		}
+	}
+
+	// MARK: - Delete bill in YNAB
+
+	async function deleteBillInYNAB(billId: string): Promise<{ success: boolean; error?: string }> {
+		const budgetIdValue = budgetId;
+		if (!budgetIdValue) {
+			return { success: false, error: 'Budget ID is missing' };
+		}
+
+		const accessToken = sessionStorage.getItem('ynab_access_token');
+		if (!accessToken) {
+			return { success: false, error: 'No access token found' };
+		}
+
+		try {
+			const response = await fetch(
+				`https://api.ynab.com/v1/budgets/${budgetIdValue}/scheduled_transactions/${billId}`,
+				{
+					method: 'DELETE',
+					headers: {
+						Authorization: `Bearer ${accessToken}`
+					}
+				}
+			);
+
+			if (response.status === 401) {
+				sessionStorage.removeItem('ynab_access_token');
+				return { success: false, error: 'Unauthorized. Please login again.' };
+			}
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				console.error('Failed to delete bill in YNAB:', errorData);
+				return { success: false, error: `Failed to delete bill: ${response.statusText}` };
+			}
+
+			return { success: true };
+		} catch (error) {
+			console.error('Error deleting bill in YNAB:', error);
+			return { success: false, error: 'Network error deleting bill' };
+		}
+	}
+
+	// MARK: - Local helpers for syncing and toasts
+
+	function setBillSyncing(billId: string, syncing: boolean) {
+		const next = new SvelteSet<string>(billsBeingSynced);
+		if (syncing) {
+			next.add(billId);
+		} else {
+			next.delete(billId);
+		}
+		billsBeingSynced = next;
+	}
+
+	// MARK: - Toast display
+
+	function showToast(message: string, type: 'success' | 'error' | 'info' = 'info') {
+		toastMessage = message;
+		toastType = type;
+		toastVisible = true;
+	}
+
+	// MARK: - Get account name by ID
+
+	function getAccountName(accountId: string | undefined | null) {
+		if (!accountId) return undefined;
+		return availableAccounts.find((a: Account) => a.id === accountId)?.name;
+	}
+
+	// MARK: - Bill creation / update / delete handlers
+
+	async function handleSaveBill(shouldPublish: boolean) {
+		const budgetIdValue = budgetId;
+		if (!budgetIdValue) {
+			showToast('Budget ID is missing.', 'error');
+			return;
+		}
+
+		if (!billFormData.account_id || !billFormData.date) {
+			showToast('Account and date are required.', 'error');
+			return;
+		}
+
+		const amountMilliunits = -Math.abs(Math.round(Number(billFormData.amount || 0) * 1000));
+		if (amountMilliunits === 0) {
+			showToast('Amount must be non-zero.', 'error');
+			return;
+		}
+
+		const frequency = billFormData.frequency || 'monthly';
+		const accountName = getAccountName(billFormData.account_id);
+
+		if (!accountName) {
+			showToast('Selected account not found.', 'error');
+			return;
+		}
+
+		const baseData = {
+			payee_name: billFormData.payee_name || null,
+			account_id: billFormData.account_id,
+			date: billFormData.date,
+			amount: amountMilliunits,
+			memo: billFormData.memo || null,
+			frequency,
+			subtransactions: [],
+			date_next: billFormData.date,
+			deleted: false,
+			account_name: accountName
+		};
+
+		// Editing existing bill
+		if (editingBillId) {
+			const existingBill = rawBills.find((b) => b.id === editingBillId);
+			if (!existingBill) {
+				showToast('Bill not found.', 'error');
+				return;
+			}
+
+			if (existingBill.published) {
+				setBillSyncing(existingBill.id, true);
+				const result = await updateBillInYNAB(existingBill.id, baseData);
+				if (!result.success) {
+					showToast(result.error ?? 'Failed to update bill in YNAB.', 'error');
+					setBillSyncing(existingBill.id, false);
+					return;
+				}
+
+				await db.scheduled_transactions.put({
+					...existingBill,
+					...baseData,
+					account_name: accountName,
+					monthly_amount: computeMonthlyAmount(baseData.amount, frequency),
+					published: true
+				});
+				setBillSyncing(existingBill.id, false);
+				showToast('Bill updated in YNAB.', 'success');
+				closeBillModal();
+				return;
+			}
+
+			// Draft editing
+			if (shouldPublish) {
+				setBillSyncing(existingBill.id, true);
+				const createResult = await createBillInYNAB(baseData);
+				if (!createResult.success || !createResult.id) {
+					showToast(createResult.error ?? 'Failed to publish draft bill.', 'error');
+					setBillSyncing(existingBill.id, false);
+					return;
+				}
+
+				const newId = createResult.id;
+				const publishedBill: CustomScheduledTransactionDetail = {
+					...existingBill,
+					...baseData,
+					id: newId,
+					budget_id: budgetIdValue,
+					account_name: accountName,
+					published: true,
+					monthly_amount: computeMonthlyAmount(baseData.amount, frequency),
+					date_next: existingBill.date_next ?? baseData.date_next
+				};
+
+				await db.scheduled_transactions.delete(existingBill.id);
+				await db.scheduled_transactions.put(publishedBill);
+				setBillSyncing(existingBill.id, false);
+				showToast('Draft published to YNAB.', 'success');
+				closeBillModal();
+				return;
+			}
+
+			// Save draft locally
+			await db.scheduled_transactions.put({
+				...existingBill,
+				...baseData,
+				account_name: accountName,
+				published: false,
+				monthly_amount: computeMonthlyAmount(baseData.amount, frequency),
+				date_next: existingBill.date_next ?? baseData.date_next
+			});
+			showToast('Draft saved locally.', 'success');
+			closeBillModal();
+			return;
+		}
+
+		// Creating new bill
+		if (shouldPublish) {
+			const tempId = crypto.randomUUID();
+			setBillSyncing(tempId, true);
+			const createResult = await createBillInYNAB(baseData);
+			if (!createResult.success || !createResult.id) {
+				showToast(createResult.error ?? 'Failed to create bill in YNAB.', 'error');
+				setBillSyncing(tempId, false);
+				return;
+			}
+
+			const newId = createResult.id;
+			await db.scheduled_transactions.put({
+				id: newId,
+				budget_id: budgetIdValue,
+				...baseData,
+				account_name: accountName,
+				published: true,
+				monthly_amount: computeMonthlyAmount(baseData.amount, frequency),
+				date_first: baseData.date,
+				date_next: baseData.date_next,
+				deleted: false,
+				subtransactions: []
+			});
+			setBillSyncing(tempId, false);
+			showToast('Bill created in YNAB.', 'success');
+			closeBillModal();
+			return;
+		}
+
+		// Save new draft locally
+		const draftId = crypto.randomUUID();
+		await db.scheduled_transactions.put({
+			id: draftId,
+			budget_id: budgetIdValue,
+			...baseData,
+			account_name: accountName,
+			published: false,
+			monthly_amount: computeMonthlyAmount(baseData.amount, frequency),
+			date_first: baseData.date,
+			date_next: baseData.date_next,
+			deleted: false,
+			subtransactions: []
+		});
+		showToast('Draft saved locally.', 'success');
+		closeBillModal();
+	}
+
+	// MARK: - Delete bill handler
+
+	async function handleDeleteBill(bill: CustomScheduledTransactionDetail) {
+		if (!bill) return;
+		if (!bill.published) {
+			await db.scheduled_transactions.delete(bill.id);
+			showToast('Draft deleted.', 'success');
+			return;
+		}
+
+		if (!confirm('Delete this bill in YNAB?')) return;
+		setBillSyncing(bill.id, true);
+		const result = await deleteBillInYNAB(bill.id);
+		if (!result.success) {
+			showToast(result.error ?? 'Failed to delete bill.', 'error');
+			setBillSyncing(bill.id, false);
+			return;
+		}
+
+		await db.scheduled_transactions.delete(bill.id);
+		setBillSyncing(bill.id, false);
+		showToast('Bill deleted in YNAB.', 'success');
+	}
+
+	// MARK: - Publish draft bill to YNAB
+
+	async function publishDraftBill(bill: CustomScheduledTransactionDetail) {
+		if (!bill) return;
+		if (!confirm('Publish this draft to YNAB?')) return;
+		setBillSyncing(bill.id, true);
+
+		const accountName = getAccountName(bill.account_id);
+
+		if (!accountName) {
+			showToast('Account for the bill not found.', 'error');
+			setBillSyncing(bill.id, false);
+			return;
+		}
+
+		const payload = {
+			payee_name: bill.payee_name || null,
+			account_id: bill.account_id,
+			amount: bill.amount,
+			memo: bill.memo || null,
+			frequency: bill.frequency,
+			subtransactions: [],
+			date: bill.date_next,
+			deleted: false,
+			account_name: accountName
+		};
+
+		const result = await createBillInYNAB(payload);
+		if (!result.success || !result.id) {
+			showToast(result.error ?? 'Failed to publish draft bill.', 'error');
+			setBillSyncing(bill.id, false);
+			return;
+		}
+
+		const newId = result.id;
+		const publishedBill: CustomScheduledTransactionDetail = {
+			...bill,
+			id: newId,
+			published: true,
+			account_name: accountName,
+			monthly_amount: computeMonthlyAmount(bill.amount, bill.frequency),
+			date_next: bill.date_next ?? bill.date_first
+		};
+
+		await db.scheduled_transactions.delete(bill.id);
+		await db.scheduled_transactions.put(publishedBill);
+		setBillSyncing(bill.id, false);
+		showToast('Draft published to YNAB.', 'success');
+	}
 </script>
 
 <svelte:head>
@@ -561,6 +1088,9 @@
 			padding: 8px;
 			gap: 1px;
 			position: relative;
+		}
+		.bill.draft {
+			border-style: dashed;
 		}
 		.bill.excluded {
 			opacity: 0.5;
@@ -615,6 +1145,27 @@
 			padding: 0;
 			margin: 0.5rem 0 0 1rem;
 		}
+		.draft-badge {
+			position: absolute;
+			top: 8px;
+			left: 8px;
+			background: #f59e0b;
+			color: white;
+			padding: 2px 6px;
+			border-radius: 4px;
+			font-size: 12px;
+			font-weight: 600;
+		}
+		.bill-loading {
+			position: absolute;
+			top: 8px;
+			right: 8px;
+			background: #2563eb;
+			color: white;
+			padding: 2px 8px;
+			border-radius: 4px;
+			font-size: 12px;
+		}
 		.bill-container {
 			display: grid;
 			gap: 16px;
@@ -639,6 +1190,73 @@
 		.create-bill-button:disabled {
 			opacity: 0.5;
 			cursor: not-allowed;
+		}
+		.modal-backdrop {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: rgba(0, 0, 0, 0.35);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			z-index: 1000;
+		}
+		.modal {
+			background: white;
+			padding: 24px;
+			border-radius: 12px;
+			width: min(520px, 95vw);
+			box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+			display: flex;
+			flex-direction: column;
+			gap: 16px;
+		}
+		.form-grid {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 12px;
+		}
+		.form-grid label {
+			display: flex;
+			flex-direction: column;
+			gap: 4px;
+			font-size: 14px;
+			color: #333;
+		}
+		.form-grid input,
+		.form-grid select {
+			padding: 8px;
+			border: 1px solid #ccc;
+			border-radius: 6px;
+			font-size: 14px;
+		}
+		.published-toggle {
+			flex-direction: row !important;
+			align-items: center;
+			gap: 8px !important;
+		}
+		.modal-actions {
+			display: flex;
+			gap: 12px;
+			justify-content: flex-end;
+		}
+		.modal-actions .primary {
+			background: #2563eb;
+			color: white;
+			border: none;
+			padding: 8px 14px;
+			border-radius: 6px;
+			cursor: pointer;
+		}
+		.modal-actions .secondary {
+			background: white;
+			border: 1px solid #ccc;
+			padding: 8px 14px;
+			border-radius: 6px;
+			cursor: pointer;
+			color: #333;
 		}
 
 		@media screen and (max-width: 600px) {
@@ -678,7 +1296,96 @@
 	</style>
 </svelte:head>
 
+<!-- MARK: - Window Events -->
+
+<svelte:window
+	onkeydown={(e: KeyboardEvent) => {
+		if (e.key === 'Escape') {
+			closeBillModal();
+		}
+	}}
+/>
+
+<!-- MARK: - Toast -->
 <Toast message={toastMessage} type={toastType} bind:visible={toastVisible} />
+
+<!-- MARK: - Bill Modal -->
+{#if showBillModal}
+	<div class="modal-backdrop">
+		<div class="modal">
+			<h2>{editingBillId ? 'Edit Bill' : 'Create Bill'}</h2>
+			<form
+				onsubmit={(e: Event) => {
+					e.preventDefault();
+					handleSaveBill(billFormData.published);
+				}}
+			>
+				<div class="form-grid">
+					<label>
+						Account*
+						<select bind:value={billFormData.account_id} required>
+							<option value="">Select account</option>
+							{#each availableAccounts as account (account.id)}
+								<option value={account.id}>{account.name}</option>
+							{/each}
+						</select>
+					</label>
+					<label>
+						Date*
+						<input type="date" bind:value={billFormData.date} required />
+					</label>
+					<label>
+						Amount {currentBudget?.currency_format?.currency_symbol
+							? `(in ${currentBudget.currency_format.iso_code})`
+							: null}*
+						<input
+							type="number"
+							step="0.01"
+							min="0"
+							bind:value={billFormData.amount}
+							placeholder="75.00"
+						/>
+					</label>
+					<label>
+						Payee (optional)
+						<input type="text" bind:value={billFormData.payee_name} placeholder="Payee name" />
+					</label>
+					<label>
+						Memo (optional)
+						<input type="text" bind:value={billFormData.memo} placeholder="Notes" />
+					</label>
+					<label>
+						Frequency
+						<select bind:value={billFormData.frequency}>
+							<option value="monthly">Monthly</option>
+							<option value="weekly">Weekly</option>
+							<option value="everyOtherWeek">Every Other Week</option>
+							<option value="twiceAMonth">Twice a Month</option>
+							<option value="everyOtherMonth">Every Other Month</option>
+							<option value="every3Months">Every 3 Months</option>
+							<option value="twiceAYear">Twice a Year</option>
+							<option value="yearly">Yearly</option>
+						</select>
+					</label>
+					<label class="published-toggle">
+						<input
+							type="checkbox"
+							bind:checked={billFormData.published}
+							disabled={editingBillId !== null && billFormData.published}
+						/>
+						Published
+					</label>
+				</div>
+				<div class="modal-actions">
+					<button class="secondary" onclick={closeBillModal}>Cancel</button>
+					<button class="primary">
+						{billFormData.published ? 'Save & Publish' : 'Save Draft'}
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+{/if}
 
 <main class="container">
 	{#if budgetId}
@@ -692,16 +1399,16 @@
 				{resettingData ? 'Resetting...' : 'Reset Data'}
 			</button>
 			{#if allowsBothReadAndWriteAccess}
-				<!-- Button for creating bills; should only be available if user has write permissions for active token; opens a modal for creating a new bill -->
-				<!-- TODO -->
 				<button
 					class="create-bill-button"
 					disabled={!allowsBothReadAndWriteAccess}
+					onclick={() => openBillModal()}
 					data-tooltip={allowsBothReadAndWriteAccess
 						? null
 						: 'You need write access to create bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
-					>Create Bill</button
 				>
+					Create Bill
+				</button>
 			{/if}
 		</div>
 		<!-- MARK: - Options -->
@@ -740,45 +1447,68 @@
 		<h1>Bills</h1>
 		<div class="bill-container">
 			{#each bills as bill (bill.id)}
-				<div class="bill" class:excluded={bill.excluded}>
+				{#if billsBeingSynced.has(bill.id)}
+					<!-- loading state marker; no content change needed -->
+				{/if}
+				<div class="bill" class:excluded={bill.excluded} class:draft={!bill.published}>
 					<div class="bill-actions">
+						<!-- MARK: - Toggle Exclude/Include -->
 						<button
 							class="toggle-exclude"
 							onclick={() => toggleExcluded(bill.id, bill.excluded ?? false)}
-							title={bill.excluded ? 'Include in calculations' : 'Exclude from calculations'}
+							data-tooltip={bill.excluded
+								? 'Excluded from calculations'
+								: 'Included in calculations'}
 						>
 							{bill.excluded ? '👁️' : '✓'}
 						</button>
+						<!-- MARK: - Edit/Delete/Publish Buttons -->
 						{#if allowsBothReadAndWriteAccess}
-							<!-- Button for updating bill; only available when access token has write permissions -->
-							<!-- TODO -->
 							<button
 								class="edit-bill-button"
-								disabled={!allowsBothReadAndWriteAccess}
+								disabled={!allowsBothReadAndWriteAccess || billsBeingSynced.has(bill.id)}
+								onclick={() => openBillModal(bill)}
 								data-tooltip={allowsBothReadAndWriteAccess
-									? null
+									? 'Edit this bill'
 									: 'You need write access to edit bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
 							>
 								✏️
 							</button>
-							<!-- Button for deleting bill with confirmation prompt; only available when access token has write permissions -->
-							<!-- TODO -->
 							<button
 								class="delete-bill-button"
-								disabled={!allowsBothReadAndWriteAccess}
+								disabled={!allowsBothReadAndWriteAccess || billsBeingSynced.has(bill.id)}
+								onclick={() => handleDeleteBill(bill)}
 								data-tooltip={allowsBothReadAndWriteAccess
-									? null
+									? 'Delete this bill'
 									: 'You need write access to delete bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
 							>
 								🗑️
 							</button>
+							{#if !bill.published}
+								<button
+									class="publish-bill-button"
+									disabled={!allowsBothReadAndWriteAccess || billsBeingSynced.has(bill.id)}
+									onclick={() => publishDraftBill(bill)}
+									data-tooltip={allowsBothReadAndWriteAccess
+										? 'Bill is draft. Click to publish to YNAB.'
+										: 'You need write access to publish bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
+								>
+									🚀
+								</button>
+							{/if}
 						{/if}
 					</div>
+					{#if !bill.published}
+						<div class="draft-badge">DRAFT</div>
+					{/if}
+					{#if billsBeingSynced.has(bill.id)}
+						<div class="bill-loading">Syncing with YNAB…</div>
+					{/if}
 					<p>
 						{determineAmountStringFromBudgetCurrency(-bill.amount)} ({parseFrequencyText(
 							bill.frequency
 						)}) to
-						{bill.payee_name}
+						{bill.payee_name ?? '{payee unspecified}'}
 					</p>
 					<ul class="bill-details">
 						<li class="monthly-equivalent">
