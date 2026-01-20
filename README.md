@@ -40,7 +40,7 @@ Click Save Application, and then copy the Client ID and paste it as the value fo
 
 4. Run the server: `bun dev`
 
-Some changes may not show for dev. To catch these, run `bun build` and then run `bun preview` to preview how the app would work on a Production-esque environment. You must run `bun build` each time you make changes (unlike with `bun dev`, which auto-refreshes).
+Some changes may not show for dev. To catch these, run `bun run build` and then run `bun preview` to preview how the app would work on a Production-esque environment. You must run `bun run build` each time you make changes (unlike with `bun dev`, which auto-refreshes).
 
 ---
 
