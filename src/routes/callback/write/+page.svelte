@@ -12,7 +12,7 @@
 
 		if (accessToken) {
 			sessionStorage.setItem('ynab_access_token', accessToken);
-			sessionStorage.setItem('ynab_token_write', 'false');
+			sessionStorage.setItem('ynab_token_write', 'true');
 			// const path = PUBLIC_BASE_PATH || '/';
 			goto(resolve('/'));
 		}

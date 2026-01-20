@@ -8,12 +8,13 @@ This app helps you track and visualize your recurring bills from YNAB.
 
 ## Getting Plans
 
-1. Click "Login With YNAB", select your default plan and click "Authorize"
+1. Click "Login With YNAB (Read-Only)", select your default plan and click "Authorize"
+   - Alternatively, you can click "Login With YNAB (Read and Write)", which gives you access to more features (see: [In a Plan (Read and Write)](#in-a-plan-read-and-write)).
 2. Click "Fetch Plans" to get all your plans from YNAB
    - If you want to test the app out first, create a demo plan instead
 3. Click "View" to enter a plan and "Delete" to delete the plan after confirming
 
-## In a Plan
+## In a Plan (Read-Only)
 
 ### Fetching Your Bills
 
@@ -46,3 +47,8 @@ If you need to start fresh, click "Reset Data" to clear all locally stored sched
 ### Demo Mode
 
 If you're viewing the demo plan, you'll see sample data to explore the app's features without connecting your YNAB account.
+
+## In a Plan (Read and Write)
+
+> [!WARNING]
+> This is a work-in-progress. New features have yet to be implemented.

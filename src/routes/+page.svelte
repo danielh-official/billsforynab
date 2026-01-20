@@ -14,7 +14,7 @@
 		return '';
 	});
 
-	let authUrl = $derived.by(() => {
+	let readonlyAuthUrl = $derived.by(() => {
 		// The default client ID only works with production url.
 		// Set the PUBLIC_YNAB_CLIENT_ID to a client that works with your dev URL.
 		const clientId =
@@ -25,6 +25,19 @@
 		const redirectUri = `${currentUrl}/callback`;
 
 		return `https://app.ynab.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=read-only`;
+	});
+
+	let writeAllowedAuthUrl = $derived.by(() => {
+		// The default client ID only works with production url.
+		// Set the PUBLIC_YNAB_CLIENT_ID to a client that works with your dev URL.
+		const clientId =
+			PUBLIC_YNAB_CLIENT_ID.trim().length > 0
+				? PUBLIC_YNAB_CLIENT_ID
+				: 'pSUArM_scyhWolG84x64phZCixdv4rDXkyr3JpzoN34';
+
+		const redirectUri = `${currentUrl}/callback/write`;
+
+		return `https://app.ynab.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token`;
 	});
 
 	let authToken = $derived.by(() => {
@@ -121,6 +134,19 @@
 				});
 		}
 	}
+
+	const accessType = $derived.by(() => {
+		// Get ynab_token_write value from session storage
+		if (browser) {
+			const writeToken = sessionStorage.getItem('ynab_token_write');
+			if (writeToken === 'true') {
+				return 'read and write access';
+			} else {
+				return 'read-only access';
+			}
+		}
+		return 'Unknown';
+	});
 </script>
 
 <svelte:head>
@@ -210,6 +236,18 @@
 			text-decoration: underline;
 		}
 
+		.login-options {
+			display: flex;
+			flex-direction: column;
+			gap: 1rem;
+		}
+
+		.logged-in-message {
+			text-align: center;
+			display: flex;
+			flex-direction: column;
+		}
+
 		@media (prefers-color-scheme: dark) {
 			.table th {
 				background-color: #444;
@@ -220,9 +258,31 @@
 
 <div class="container">
 	{#if authToken}
-		<p>Access token found. You are logged in.</p>
+		<div class="logged-in-message">
+			<p>Access token found. You are logged in with {accessType}.</p>
+			<button
+				type="button"
+				onclick={() => {
+					sessionStorage.removeItem('ynab_access_token');
+					location.reload();
+				}}>Logout?</button
+			>
+		</div>
 	{:else}
-		<a data-sveltekit-reload href={authUrl}>Login With YNAB</a>
+		<div class="login-options">
+			<a
+				data-sveltekit-reload
+				href={readonlyAuthUrl}
+				data-tooltip="Use this option if you just want to import your YNAB data. This is the recommended option for most users."
+				>Login With YNAB (Read-Only)</a
+			>
+			<a
+				data-sveltekit-reload
+				href={writeAllowedAuthUrl}
+				data-tooltip="Use this option if you want to create/update/delete bills from here and sync the changes to your YNAB account."
+				>Login With YNAB (Read and Write)</a
+			>
+		</div>
 	{/if}
 	<button
 		class="fetch-budgets-button"
