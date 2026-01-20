@@ -14,8 +14,6 @@ Most data retrieved from YNAB is stored in the `BillsForYnabDB` IndexedDB on you
 
 Furthermore, the authorization method (Implicit Grant Flow) for your access token ensures it expires 2 hours after receipt.
 
-Finally, content security policy (CSP) and Cross-Origin-Resource-Sharing (CORS) are enabled to prevent common attack methods.
-
 ## Confidentially
 
 Due to the local nature of storage and your ability to self-host, we are unable to access your data without having access to your computer.
