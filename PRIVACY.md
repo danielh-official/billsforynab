@@ -1,12 +1,12 @@
 # Privacy
 
-**Last Updated: January 15, 2025**
+**Last Updated: January 19, 2025**
 
 Thank you for choosing Bills (For YNAB) (referred to as “we,” “our,” or “us”). We are committed to protecting your privacy and handling your data with the utmost care. This privacy policy outlines how we handle, store, and secure the data obtained through the YNAB API to ensure your confidence and peace of mind while using our services.
 
 ## Data Handling, Storage, and Security
 
-Bills uses the YNAB API to access and retrieve financial data from your YNAB account. This data includes but is not limited to plan information and scheduled transactions.
+Bills uses the YNAB API to access and retrieve financial data from your YNAB account. This data includes, but is not limited to plan information and scheduled transactions.
 
 The data obtained through the YNAB API is used solely for the purpose of providing our services to you. It allows us to analyze and present your bill data. We will not use this data for any other purpose without your explicit consent.
 
@@ -18,7 +18,7 @@ Finally, content security policy (CSP) and Cross-Origin-Resource-Sharing (CORS) 
 
 ## Confidentially
 
-Due to the local nature of storage and your ability to self-host, we are unable to access your data.
+Due to the local nature of storage and your ability to self-host, we are unable to access your data without having access to your computer.
 
 ## Changes to this Privacy Policy
 
