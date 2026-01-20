@@ -173,7 +173,7 @@
 		.create-demo-plan-button {
 			padding: 0em 0em;
 			background-color: transparent;
-			color: blue;
+			color: #007bff;
 			border: none;
 			border-radius: none;
 			cursor: pointer;
