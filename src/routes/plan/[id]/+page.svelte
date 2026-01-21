@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { liveQuery, type Observable } from 'dexie';
+	import { liveQuery } from 'dexie';
 	import {
 		ScheduledTransactionFrequency,
 		type ScheduledTransactionDetail,
@@ -639,7 +639,7 @@
 	// MARK: - Find category by id
 	function getCategoryName(categoryId: string | undefined | null) {
 		if (!categoryId || !budgetId) return undefined;
-		for (const group of $categoryGroups.filter((g) => g.budget_id === budgetId)) {
+		for (const group of categoryGroups.filter((g) => g.budget_id === budgetId)) {
 			const category = group.categories.find((c) => c.id === categoryId);
 			if (category) {
 				return category.name;
@@ -651,7 +651,7 @@
 	function getCategory(categoryId: string | null | undefined): Category | null {
 		if (!budgetId || !categoryId) return null;
 
-		const groups = $categoryGroups?.filter((g) => g.budget_id === budgetId) ?? [];
+		const groups = categoryGroups?.filter((g) => g.budget_id === budgetId) ?? [];
 
 		for (const group of groups) {
 			const category = group.categories.find((c) => c.id === categoryId);
@@ -980,8 +980,10 @@
 		showToast('Draft published to YNAB.', 'success');
 	}
 
-	const categoryGroups: Observable<CustomCategoryGroupWithCategories[]> = $derived.by(() =>
-		liveQuery(() =>
+	let categoryGroups = $state<CustomCategoryGroupWithCategories[]>([]);
+
+	$effect(() => {
+		const subscription = liveQuery(() =>
 			db.category_groups
 				.where('budget_id')
 				.equals(budgetId || '')
@@ -995,8 +997,12 @@
 
 					return groups;
 				})
-		)
-	);
+		).subscribe((result) => {
+			categoryGroups = result || [];
+		});
+
+		return () => subscription.unsubscribe();
+	});
 </script>
 
 <svelte:head>
@@ -1325,7 +1331,7 @@
 						Category (optional)
 						<select bind:value={billFormData.category_id}>
 							<option value="">Select category</option>
-							{#each $categoryGroups as group (group.id)}
+							{#each categoryGroups as group (group.id)}
 								<optgroup label={group.name}>
 									{#each group.categories as category (category.id)}
 										<option value={category.id}>{category.name}</option>
