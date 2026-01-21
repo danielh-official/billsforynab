@@ -4,8 +4,8 @@ import type { BudgetDetail, CategoryGroupWithCategories, ScheduledTransactionDet
 interface CustomBudgetDetail extends BudgetDetail {
 	is_default?: boolean;
 	server_knowledge?: {
-		scheduled_transactions: number;
-		category_groups: number;
+		scheduled_transactions?: number;
+		category_groups?: number;
 	};
 	last_fetched?: Date;
 }

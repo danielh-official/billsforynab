@@ -57,7 +57,7 @@
 		// Async check for budget existence in DB
 		(async () => {
 			const budget = await db.budgets.get(id);
-			
+
 			if (!budget) {
 				goto(resolve('/'));
 				return;
@@ -275,13 +275,15 @@
 		const newScheduledTransactionsServerKnowledge =
 			scheduledTransactionsResponseJson.data.server_knowledge;
 
+		const existingCategoriesServerKnowledge = currentBudget?.server_knowledge?.category_groups || 0;
+
 		// MARK: - Update budget
 		// Do this even though we don't have server knowledge for category groups yet,
 		// because if category groups fetch fails, we at least have server knowledge for scheduled transactions
 		await db.budgets.update(budgetId, {
 			server_knowledge: {
 				scheduled_transactions: newScheduledTransactionsServerKnowledge,
-				category_groups: 0
+				category_groups: existingCategoriesServerKnowledge
 			},
 			last_fetched: new Date()
 		});
@@ -295,7 +297,7 @@
 
 		// Get last knowledge of server
 		const lastKnowledgeOfServerOfCategoryGroupsForBudget =
-			currentBudget?.server_knowledge?.category_groups;
+			currentBudget?.server_knowledge?.category_groups || 0;
 
 		if (lastKnowledgeOfServerOfCategoryGroupsForBudget) {
 			endpoint += `?last_knowledge_of_server=${lastKnowledgeOfServerOfCategoryGroupsForBudget}`;
