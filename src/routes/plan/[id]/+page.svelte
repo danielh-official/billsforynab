@@ -378,6 +378,47 @@
 
 			await db.scheduled_transactions.bulkPut(fakeBills);
 
+			await db.budgets.update(budgetIdValue, {
+				accounts: [
+					{
+						id: 'demo-account-1',
+						name: 'Checking Account',
+						type: 'checking',
+						on_budget: true,
+						closed: false,
+						deleted: false,
+						balance: 5000000, // $5,000.00
+						cleared_balance: 5000000,
+						uncleared_balance: 0,
+						transfer_payee_id: null
+					},
+					{
+						id: 'demo-account-2',
+						name: 'Savings Account',
+						type: 'savings',
+						on_budget: true,
+						closed: false,
+						deleted: false,
+						balance: 10000000, // $10,000.00
+						cleared_balance: 10000000,
+						uncleared_balance: 0,
+						transfer_payee_id: null
+					},
+					{
+						id: 'demo-account-3',
+						name: 'Credit Card',
+						type: 'creditCard',
+						on_budget: true,
+						closed: false,
+						deleted: false,
+						balance: -200000, // -$2,000.00
+						cleared_balance: -200000,
+						uncleared_balance: 0,
+						transfer_payee_id: null
+					}
+				]
+			});
+
 			fetchingScheduledTransactions = false;
 
 			return;
@@ -791,7 +832,7 @@
 
 			if (existingBill.published) {
 				setBillSyncing(existingBill.id, true);
-				const result = await updateBillInYNAB(budgetId, existingBill.id, baseData);
+				const result = await updateBillInYNAB(budgetId, existingBill.id, baseData, isDemo);
 				if (!result.success) {
 					showToast(result.error ?? 'Failed to update bill in YNAB.', 'error');
 					setBillSyncing(existingBill.id, false);
@@ -814,7 +855,11 @@
 					deleted: existingBill.deleted
 				});
 				setBillSyncing(existingBill.id, false);
-				showToast('Bill updated in YNAB.', 'success');
+				if (isDemo) {
+					showToast('Bill updated in YNAB (not).', 'success');
+				} else {
+					showToast('Bill updated in YNAB.', 'success');
+				}
 				closeBillModal();
 				return;
 			}
@@ -822,7 +867,7 @@
 			// Draft editing
 			if (shouldPublish) {
 				setBillSyncing(existingBill.id, true);
-				const createResult = await createBillInYNAB(budgetId, baseData);
+				const createResult = await createBillInYNAB(budgetId, baseData, isDemo);
 				if (!createResult.success || !createResult.id) {
 					showToast(createResult.error ?? 'Failed to publish draft bill.', 'error');
 					setBillSyncing(existingBill.id, false);
@@ -874,7 +919,7 @@
 		if (shouldPublish) {
 			const tempId = crypto.randomUUID();
 			setBillSyncing(tempId, true);
-			const createResult = await createBillInYNAB(budgetId, baseData);
+			const createResult = await createBillInYNAB(budgetId, baseData, isDemo);
 			if (!createResult.success || !createResult.id) {
 				showToast(createResult.error ?? 'Failed to create bill in YNAB.', 'error');
 				setBillSyncing(tempId, false);
@@ -899,7 +944,11 @@
 				payee_name: baseData.payee_name ?? null
 			});
 			setBillSyncing(tempId, false);
-			showToast('Bill created in YNAB.', 'success');
+			if (isDemo) {
+				showToast('Bill created in YNAB (not).', 'success');
+			} else {
+				showToast('Bill created in YNAB.', 'success');
+			}
 			closeBillModal();
 			return;
 		}
@@ -943,7 +992,7 @@
 
 		if (!confirm('Delete this bill in YNAB?')) return;
 		setBillSyncing(bill.id, true);
-		const result = await deleteBillInYNAB(budgetId, bill.id);
+		const result = await deleteBillInYNAB(budgetId, bill.id, isDemo);
 		if (!result.success) {
 			showToast(result.error ?? 'Failed to delete bill.', 'error');
 			setBillSyncing(bill.id, false);
@@ -952,7 +1001,11 @@
 
 		await db.scheduled_transactions.delete(bill.id);
 		setBillSyncing(bill.id, false);
-		showToast('Bill deleted in YNAB.', 'success');
+		if (isDemo) {
+			showToast('Bill deleted in YNAB (not).', 'success');
+		} else {
+			showToast('Bill deleted in YNAB.', 'success');
+		}
 	}
 
 	// MARK: - Publish draft bill to YNAB
@@ -986,7 +1039,7 @@
 			account_name: accountName
 		};
 
-		const result = await createBillInYNAB(budgetId, payload);
+		const result = await createBillInYNAB(budgetId, payload, isDemo);
 		if (!result.success || !result.id) {
 			showToast(result.error ?? 'Failed to publish draft bill.', 'error');
 			setBillSyncing(bill.id, false);
@@ -995,12 +1048,20 @@
 
 		const newId = result.id;
 		const publishedBill: CustomScheduledTransactionDetail = {
-			...bill,
 			id: newId,
 			published: true,
 			account_name: accountName,
 			monthly_amount: computeMonthlyAmount(bill.amount, bill.frequency),
-			date_next: bill.date_next ?? bill.date_first
+			date_next: bill.date_next ?? bill.date_first,
+			date_first: bill.date_first,
+			budget_id: budgetId,
+			frequency: bill.frequency,
+			account_id: bill.account_id,
+			amount: bill.amount,
+			memo: bill.memo,
+			payee_name: bill.payee_name,
+			deleted: false,
+			subtransactions: []
 		};
 
 		await db.scheduled_transactions.delete(bill.id);

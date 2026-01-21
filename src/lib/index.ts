@@ -9,8 +9,13 @@ import type {
 export async function updateBillInYNAB(
 	budgetId: string,
 	billId: string,
-	billData: PutScheduledTransactionWrapper['scheduled_transaction']
+	billData: PutScheduledTransactionWrapper['scheduled_transaction'],
+	dummy: boolean = false
 ): Promise<{ success: boolean; error?: string }> {
+	if (dummy) {
+		return { success: true };
+	}
+
 	const accessToken = sessionStorage.getItem('ynab_access_token');
 	if (!accessToken) {
 		return { success: false, error: 'No access token found' };
@@ -89,8 +94,13 @@ function parseFrequency(
 
 export async function createBillInYNAB(
 	budgetId: string,
-	billData: PostScheduledTransactionWrapper['scheduled_transaction']
+	billData: PostScheduledTransactionWrapper['scheduled_transaction'],
+	dummy: boolean = false
 ): Promise<{ success: boolean; id?: string; error?: string }> {
+	if (dummy) {
+		return { success: true, id: crypto.randomUUID() };
+	}
+
 	const accessToken = sessionStorage.getItem('ynab_access_token');
 	if (!accessToken) {
 		return { success: false, error: 'No access token found' };
@@ -144,8 +154,13 @@ export async function createBillInYNAB(
 
 export async function deleteBillInYNAB(
 	budgetId: string,
-	billId: string
+	billId: string,
+	dummy: boolean = false
 ): Promise<{ success: boolean; error?: string }> {
+	if (dummy) {
+		return { success: true };
+	}
+
 	const accessToken = sessionStorage.getItem('ynab_access_token');
 	if (!accessToken) {
 		return { success: false, error: 'No access token found' };
