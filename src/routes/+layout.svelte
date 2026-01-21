@@ -133,7 +133,7 @@
 		created, updated, or deleted within this interface: {unsupportedFrequencies.join(', ')}.
 	</div>
 	<div style="margin-top: 0.5rem;">
-		You will have to managed these bills directly in
+		You will have to manage these bills directly in
 		<a href="https://app.ynab.com" target="_blank" rel="noopener noreferrer">YNAB</a>
 	</div>
 </div>
