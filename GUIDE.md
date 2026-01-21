@@ -50,5 +50,26 @@ If you're viewing the demo plan, you'll see sample data to explore the app's fea
 
 ## In a Plan (Read and Write)
 
-> [!WARNING]
-> This is a work-in-progress. New features have yet to be implemented.
+> [!NOTE]
+> Because of an issue with YNAB API, the only allowed frequencies are daily, weekly, monthly, and yearly. If you want to manage a bill with a different frequency, you'll have to work on its equivalent scheduled transaction in [YNAB](https://app.ynab.com).
+
+You get everything with read-only access PLUS:
+
+> The ability to create, edit, and delete bills from here and have the changes show up in your YNAB.
+
+You have the option of creating a bill as draft or published:
+
+- Draft Bills: If you just want to see what your bill will look like without sending it to YNAB, you can create a bill as a draft. This is saved locally in your browser. (NOTE: if you clear all storage or use a new browser, the bill won't be available like it would be if it were published.)
+- Published Bills: If you want to sync the bill to YNAB immediately, create it with the "published" checkbox checked (or click on the "🚀" icon and confirm to publish a draft).
+
+To create a new bill, click "Create Bill". To edit a bill, click the "✏️" icon.
+
+- Account is required
+- Date is required
+- Amount must be greater than 0
+
+To delete a bill, click the "🗑️" icon and confirm.
+
+### Demo Mode
+
+In the demo plan, you have access to all operations, but since you're not actually using the YNAB API, any calls for published bills are fake.
