@@ -211,7 +211,7 @@ export async function createFakeDataForDemo() {
 	const autoTransportGroupId = 'demo-group-5';
 	const creditCardGroupId = 'demo-group-6';
 
-	const utiligiesGroupName = 'Utilities';
+	const utilitiesGroupName = 'Utilities';
 	const entertainmentGroupName = 'Entertainment';
 	const healthFitnessGroupName = 'Health & Fitness';
 	const foodDrinksGroupName = 'Food & Drinks';
@@ -226,7 +226,7 @@ export async function createFakeDataForDemo() {
 		balance: 0,
 		budgeted: 0,
 		category_group_id: utilitiesGroupId,
-		category_group_name: utiligiesGroupName,
+		category_group_name: utilitiesGroupName,
 		hidden: false,
 		note: null
 	};
@@ -239,7 +239,7 @@ export async function createFakeDataForDemo() {
 		balance: 0,
 		budgeted: 0,
 		category_group_id: utilitiesGroupId,
-		category_group_name: utiligiesGroupName,
+		category_group_name: utilitiesGroupName,
 		hidden: false,
 		note: null
 	};

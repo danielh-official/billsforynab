@@ -14,7 +14,6 @@
 		type Category
 	} from 'ynab';
 	import { db } from '$lib/db';
-	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import type {
 		CustomBudgetDetail,
@@ -40,12 +39,14 @@
 		return page.params.id === 'demo';
 	});
 
-	const allowsBothReadAndWriteAccess = $derived.by(() => {
+	let allowsBothReadAndWriteAccess: boolean = $state(false);
+
+	$effect(() => {
 		const ynabTokenWrite = sessionStorage.getItem('ynab_token_write');
-		return ynabTokenWrite === 'true';
+		allowsBothReadAndWriteAccess = ynabTokenWrite === 'true';
 	});
 
-	onMount(async () => {
+	$effect(() => {
 		const id = page.params.id;
 
 		if (!id) {
@@ -53,7 +54,7 @@
 			return;
 		}
 
-		const budgetIdExistsInDb = await db.budgets.get(id);
+		const budgetIdExistsInDb = db.budgets.get(id).then((budget) => !!budget);
 
 		if (!budgetIdExistsInDb) {
 			goto(resolve('/'));
@@ -256,14 +257,12 @@
 		const scheduledTransactionsResponseJson: ScheduledTransactionsResponse =
 			await scheduledTransactionsFetch.json();
 
-		let nonNullBudgetId = budgetId;
-
 		const scheduledTransactions: CustomScheduledTransactionDetail[] =
 			scheduledTransactionsResponseJson.data.scheduled_transactions.map(
 				(scheduledTransaction: ScheduledTransactionDetail) => ({
 					...scheduledTransaction,
 					// Make budget id empty string by default to overcome issue with nullable budget id not being compatible with CustomScheduledTransactionDetail.budget_id nonnullable string type
-					budget_id: nonNullBudgetId,
+					budget_id: budgetId!,
 					published: true,
 					monthly_amount:
 						scheduledTransaction.amount *
@@ -336,7 +335,7 @@
 		const categoryGroupWithCategories: CustomCategoryGroupWithCategories[] =
 			categoriesResponseJson.data.category_groups.map((group) => ({
 				...group,
-				budget_id: nonNullBudgetId
+				budget_id: budgetId!
 			}));
 
 		// Bulk put category groups with categories
@@ -369,6 +368,7 @@
 
 		db.transaction('rw', db.budgets, db.scheduled_transactions, async () => {
 			await db.scheduled_transactions.where('budget_id').equals(budgetIdValue).delete();
+			await db.category_groups.where('budget_id').equals(budgetIdValue).delete();
 			await db.budgets.update(budgetIdValue, {
 				server_knowledge: {
 					scheduled_transactions: 0,
@@ -408,7 +408,7 @@
 		return fiveYearsFromNow.toISOString().split('T')[0];
 	});
 
-	onMount(() => {
+	$effect(() => {
 		if (typeof localStorage === 'undefined') return;
 
 		const storedSortBy = localStorage.getItem('sort_by');
@@ -939,16 +939,13 @@
 			return;
 		}
 
-		const payload = {
+		const payload: PostScheduledTransactionWrapper['scheduled_transaction'] = {
 			payee_name: bill.payee_name || null,
 			account_id: bill.account_id,
 			amount: bill.amount,
 			memo: bill.memo || null,
 			frequency: bill.frequency,
-			subtransactions: [],
-			date: bill.date_next,
-			deleted: false,
-			account_name: accountName
+			date: bill.date_next
 		};
 
 		const result = await createBillInYNAB(budgetId, payload, isDemo);
@@ -973,7 +970,9 @@
 			memo: bill.memo,
 			payee_name: bill.payee_name,
 			deleted: false,
-			subtransactions: []
+			subtransactions: [],
+			category_id: bill.category_id || null,
+			category_name: getCategoryName(bill.category_id || null) || null
 		};
 
 		await db.scheduled_transactions.delete(bill.id);
@@ -982,20 +981,22 @@
 		showToast('Draft published to YNAB.', 'success');
 	}
 
-	const categoryGroups: Observable<CustomCategoryGroupWithCategories[]> = liveQuery(() =>
-		db.category_groups
-			.where('budget_id')
-			.equals(budgetId || '')
-			.toArray()
-			.then((groups) => {
-				groups.sort((a, b) => a.name.localeCompare(b.name));
+	const categoryGroups: Observable<CustomCategoryGroupWithCategories[]> = $derived.by(() =>
+		liveQuery(() =>
+			db.category_groups
+				.where('budget_id')
+				.equals(budgetId || '')
+				.toArray()
+				.then((groups) => {
+					groups.sort((a, b) => a.name.localeCompare(b.name));
 
-				groups.forEach((group) => {
-					group.categories.sort((a, b) => a.name.localeCompare(b.name));
-				});
+					groups.forEach((group) => {
+						group.categories.sort((a, b) => a.name.localeCompare(b.name));
+					});
 
-				return groups;
-			})
+					return groups;
+				})
+		)
 	);
 </script>
 
@@ -1371,7 +1372,7 @@
 					<div>
 						<p>Why can't I update this bill?</p>
 						<p>
-							Do to a bug with YNAB's API, it's not possible to update a bill with a frequency
+							Due to a bug with YNAB's API, it's not possible to update a bill with a frequency
 							within the following list: {unsupportedFrequencies.join(', ')}.
 						</p>
 						<p>
@@ -1466,6 +1467,9 @@
 							data-tooltip={bill.excluded
 								? 'Excluded from calculations'
 								: 'Included in calculations'}
+							aria-label={bill.excluded
+								? `Include bill to ${bill.payee_name ?? '{payee unspecified}'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`
+								: `Exclude bill to ${bill.payee_name ?? '{payee unspecified}'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`}
 						>
 							{bill.excluded ? '👁️' : '✓'}
 						</button>
@@ -1478,6 +1482,7 @@
 								data-tooltip={allowsBothReadAndWriteAccess
 									? 'Edit this bill'
 									: 'You need write access to edit bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
+								aria-label={`Edit bill to ${bill.payee_name ?? '{payee unspecified}'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`}
 							>
 								✏️
 							</button>
@@ -1492,6 +1497,7 @@
 										? `Cannot delete bills with frequency: ${unsupportedFrequencies.join(', ')} due to YNAB API limitations.`
 										: 'Delete this bill'
 									: 'You need write access to delete bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
+								aria-label={`Delete bill to ${bill.payee_name ?? '{payee unspecified}'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`}
 							>
 								🗑️
 							</button>
@@ -1503,6 +1509,7 @@
 									data-tooltip={allowsBothReadAndWriteAccess
 										? 'Bill is draft. Click to publish to YNAB.'
 										: 'You need write access to publish bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
+									aria-label={`Publish draft bill of ${bill.payee_name ?? '{payee unspecified}'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)} to YNAB`}
 								>
 									🚀
 								</button>
