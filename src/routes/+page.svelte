@@ -264,6 +264,7 @@
 				type="button"
 				onclick={() => {
 					sessionStorage.removeItem('ynab_access_token');
+                    sessionStorage.removeItem('ynab_token_write');
 					location.reload();
 				}}>Logout?</button
 			>
