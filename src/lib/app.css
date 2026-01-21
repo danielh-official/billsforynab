@@ -78,6 +78,11 @@ button {
 	cursor: pointer;
 }
 
+button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
 /* Change the colors based on system theme */
 
 @media (prefers-color-scheme: dark) {
@@ -102,6 +107,20 @@ button {
 	a:hover {
 		text-decoration: underline;
 		color: white;
+	}
+
+	input {
+		background-color: #444;
+		color: #e0e0e0;
+	}
+
+	select {
+		background-color: #444;
+		color: #e0e0e0;
+	}
+
+	input[type='date']::-webkit-calendar-picker-indicator {
+		background-color: #90caf9;
 	}
 }
 
@@ -167,4 +186,10 @@ button {
 [data-tooltip='false']:hover:after {
 	visibility: hidden;
 	opacity: 0;
+}
+
+ul {
+	list-style: none;
+	padding: 0;
+	margin: 0.5rem 0 0 1rem;
 }

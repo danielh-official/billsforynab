@@ -3,6 +3,7 @@
 	import '$lib/app.css';
 	import WorksWithYnab from '$lib/components/WorksWithYnab.svelte';
 	import { page } from '$app/state';
+	import { unsupportedFrequencies } from '$lib';
 
 	let { children } = $props();
 
@@ -72,6 +73,16 @@
 			font-weight: bold;
 			font-size: 1.25rem;
 		}
+
+		.write-access-note {
+			max-width: 600px;
+			margin: 0 auto 1rem auto;
+			padding: 1rem;
+			background-color: #fff3cd;
+			border: 1px solid #ffeeba;
+			color: #856404;
+			border-radius: 4px;
+		}
 	</style>
 </svelte:head>
 
@@ -113,6 +124,17 @@
 			target="_blank"
 			rel="noopener noreferrer">guide</a
 		>.
+	</div>
+</div>
+
+<div class="write-access-note">
+	<div>
+		<b>Note</b>: Due to a bug with YNAB's API, bills with the following frequencies cannot be
+		created, updated, or deleted within this interface: {unsupportedFrequencies.join(', ')}.
+	</div>
+	<div style="margin-top: 0.5rem;">
+		You will have to managed these bills directly in
+		<a href="https://app.ynab.com" target="_blank" rel="noopener noreferrer">YNAB</a>
 	</div>
 </div>
 
