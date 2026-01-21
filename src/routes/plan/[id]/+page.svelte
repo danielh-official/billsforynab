@@ -1382,7 +1382,7 @@
 					</div>
 				{/if}
 				<div class="modal-actions">
-					<button class="secondary" onclick={closeBillModal}>Cancel</button>
+					<button type="button" class="secondary" onclick={closeBillModal}>Cancel</button>
 					<button
 						class="primary"
 						disabled={!!editingBillId && unsupportedFrequencies.includes(billFormData.frequency)}
