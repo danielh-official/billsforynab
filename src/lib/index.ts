@@ -28,7 +28,8 @@ export async function updateBillInYNAB(
 			frequency: parseFrequency(billData.frequency),
 			amount: billData.amount,
 			memo: billData.memo || null,
-			date: billData.date
+			date: billData.date,
+			category_id: billData.category_id || null
 		}
 	};
 
@@ -114,7 +115,8 @@ export async function createBillInYNAB(
 			frequency: parseFrequency(billData.frequency),
 			amount: billData.amount,
 			memo: billData.memo || null,
-			date: billData.date
+			date: billData.date,
+			category_id: billData.category_id || null
 		}
 	};
 

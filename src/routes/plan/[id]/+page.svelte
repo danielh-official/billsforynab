@@ -849,6 +849,18 @@
 		return availableAccounts.find((a: Account) => a.id === accountId)?.name;
 	}
 
+	// MARK: - Find category by id
+	function getCategoryName(categoryId: string | undefined | null) {
+		if (!categoryId || !budgetId) return undefined;
+		for (const group of $categoryGroups.filter((g) => g.budget_id === budgetId)) {
+			const category = group.categories.find((c) => c.id === categoryId);
+			if (category) {
+				return category.name;
+			}
+		}
+		return undefined;
+	}
+
 	// MARK: - Bill creation / update / delete handlers
 
 	async function handleSaveBill(shouldPublish: boolean) {
@@ -899,7 +911,8 @@
 			amount: amountMilliunits,
 			memo: billFormData.memo || null,
 			frequency,
-			date: billFormData.date
+			date: billFormData.date,
+			category_id: billFormData.category_id || null
 		};
 
 		// Editing existing bill
@@ -932,7 +945,9 @@
 					amount: baseData.amount ?? existingBill.amount,
 					memo: baseData.memo ?? existingBill.memo,
 					payee_name: baseData.payee_name ?? existingBill.payee_name,
-					deleted: existingBill.deleted
+					deleted: existingBill.deleted,
+					category_id: baseData.category_id ?? existingBill.category_id,
+					category_name: getCategoryName(baseData.category_id ?? existingBill.category_id) || null
 				});
 				setBillSyncing(existingBill.id, false);
 				if (isDemo) {
@@ -956,14 +971,22 @@
 
 				const newId = createResult.id;
 				const publishedBill: CustomScheduledTransactionDetail = {
-					...existingBill,
-					...baseData,
 					id: newId,
 					budget_id: budgetId,
 					account_name: accountName,
 					published: true,
 					monthly_amount: computeMonthlyAmount(baseData.amount ?? 0, frequency),
-					date_next: baseData.date ?? existingBill.date_next
+					date_next: baseData.date ?? existingBill.date_next,
+					date_first: existingBill.date_first,
+					deleted: existingBill.deleted,
+					frequency: baseData.frequency ?? existingBill.frequency,
+					account_id: baseData.account_id,
+					category_id: baseData.category_id ?? existingBill.category_id,
+					category_name: getCategoryName(baseData.category_id ?? existingBill.category_id) || null,
+					amount: baseData.amount ?? existingBill.amount,
+					memo: baseData.memo ?? existingBill.memo,
+					payee_name: baseData.payee_name ?? existingBill.payee_name,
+					subtransactions: [...existingBill.subtransactions]
 				};
 
 				await db.scheduled_transactions.delete(existingBill.id);
@@ -988,7 +1011,9 @@
 				memo: baseData.memo ?? existingBill.memo,
 				payee_name: baseData.payee_name ?? existingBill.payee_name,
 				deleted: existingBill.deleted,
-				subtransactions: [...existingBill.subtransactions]
+				subtransactions: [...existingBill.subtransactions],
+				category_id: baseData.category_id ?? existingBill.category_id,
+				category_name: getCategoryName(baseData.category_id ?? existingBill.category_id) || null
 			});
 			showToast('Draft saved locally.', 'success');
 			closeBillModal();
@@ -1021,7 +1046,9 @@
 				account_id: baseData.account_id,
 				amount: baseData.amount ?? 0,
 				memo: baseData.memo ?? null,
-				payee_name: baseData.payee_name ?? null
+				payee_name: baseData.payee_name ?? null,
+				category_id: baseData.category_id || null,
+				category_name: getCategoryName(baseData.category_id || null) || null
 			});
 			setBillSyncing(tempId, false);
 			if (isDemo) {
@@ -1049,7 +1076,9 @@
 			account_id: baseData.account_id,
 			amount: baseData.amount ?? 0,
 			memo: baseData.memo ?? null,
-			payee_name: baseData.payee_name ?? null
+			payee_name: baseData.payee_name ?? null,
+			category_id: baseData.category_id || null,
+			category_name: getCategoryName(baseData.category_id || null) || null
 		});
 		showToast('Draft saved locally.', 'success');
 		closeBillModal();
