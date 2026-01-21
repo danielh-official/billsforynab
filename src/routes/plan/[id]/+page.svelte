@@ -10,7 +10,8 @@
 		type PostScheduledTransactionWrapper,
 		AccountType,
 		type ScheduledTransactionsResponse,
-		type CategoriesResponse
+		type CategoriesResponse,
+		type Category
 	} from 'ynab';
 	import { db } from '$lib/db';
 	import { onMount } from 'svelte';
@@ -24,6 +25,7 @@
 	import Toast from '$lib/components/Toast.svelte';
 	import {
 		createBillInYNAB,
+		createFakeDataForDemo,
 		deleteBillInYNAB,
 		supportedFrequencies,
 		unsupportedFrequencies,
@@ -211,221 +213,7 @@
 
 		if (isDemo) {
 			// For the demo budget, we will create realistic fake data instead of fetching from the API. This allows users to see how the app works without needing to connect their YNAB account or have any existing data in their account.
-
-			const fakeBills: CustomScheduledTransactionDetail[] = [
-				{
-					id: 'demo-bill-1',
-					budget_id: 'demo',
-					payee_name: 'Electric Company',
-					category_name: 'Utilities',
-					amount: -75000, // $75.00
-					frequency: 'monthly',
-					date_next: new SvelteDate(
-						new SvelteDate().setDate(new SvelteDate().getDate() + 5)
-					).toISOString(), // 5 days from now
-					date_first: new SvelteDate(
-						new SvelteDate().setMonth(new SvelteDate().getMonth() - 6)
-					).toISOString(), // 6 months ago
-					memo: 'Monthly electric bill',
-					monthly_amount: -75000,
-					account_id: 'demo-account-1',
-					account_name: 'Checking Account',
-					deleted: false,
-					published: true,
-					subtransactions: []
-				},
-				{
-					id: 'demo-bill-2',
-					budget_id: 'demo',
-					payee_name: 'Water Company',
-					category_name: 'Utilities',
-					amount: -30000, // $30.00
-					frequency: 'monthly',
-					date_next: new SvelteDate(
-						new SvelteDate().setDate(new SvelteDate().getDate() + 10)
-					).toISOString(), // 10 days from now
-					date_first: new SvelteDate(
-						new SvelteDate().setMonth(new SvelteDate().getMonth() - 3)
-					).toISOString(), // 3 months ago
-					memo: 'Monthly water bill',
-					monthly_amount: -30000,
-					account_id: 'demo-account-1',
-					account_name: 'Checking Account',
-					deleted: false,
-					published: true,
-					subtransactions: []
-				},
-				{
-					id: 'demo-bill-3',
-					budget_id: 'demo',
-					payee_name: 'Spotify',
-					category_name: 'Entertainment',
-					amount: -9990, // $9.99
-					frequency: 'monthly',
-					date_next: new SvelteDate(
-						new SvelteDate().setDate(new SvelteDate().getDate() + 2)
-					).toISOString(), // 2 days from now
-					date_first: new SvelteDate(
-						new SvelteDate().setMonth(new SvelteDate().getMonth() - 12)
-					).toISOString(), // 12 months ago
-					memo: 'Monthly Spotify subscription',
-					monthly_amount: -9990,
-					account_id: 'demo-account-1',
-					account_name: 'Checking Account',
-					deleted: false,
-					published: true,
-					subtransactions: []
-				},
-				{
-					id: 'demo-bill-4',
-					budget_id: 'demo',
-					payee_name: 'Netflix',
-					category_name: 'Entertainment',
-					amount: -15900, // $15.90
-					frequency: 'monthly',
-					date_next: new SvelteDate(
-						new SvelteDate().setDate(new SvelteDate().getDate() + 15)
-					).toISOString(), // 15 days from now
-					date_first: new SvelteDate(
-						new SvelteDate().setMonth(new SvelteDate().getMonth() - 8)
-					).toISOString(), // 8 months ago
-					memo: 'Monthly Netflix subscription',
-					monthly_amount: -15900,
-					account_id: 'demo-account-1',
-					account_name: 'Checking Account',
-					deleted: false,
-					published: true,
-					subtransactions: []
-				},
-				{
-					id: 'demo-bill-5',
-					budget_id: 'demo',
-					payee_name: 'Gym Membership',
-					category_name: 'Health & Fitness',
-					amount: -45000, // $45.00
-					frequency: 'monthly',
-					date_next: new SvelteDate(
-						new SvelteDate().setDate(new SvelteDate().getDate() + 20)
-					).toISOString(), // 20 days from now
-					date_first: new SvelteDate(
-						new SvelteDate().setMonth(new SvelteDate().getMonth() - 4)
-					).toISOString(), // 4 months ago
-					memo: 'Monthly gym membership fee',
-					monthly_amount: -45000,
-					account_id: 'demo-account-1',
-					account_name: 'Checking Account',
-					deleted: false,
-					published: true,
-					subtransactions: []
-				},
-				{
-					id: 'demo-bill-6',
-					budget_id: 'demo',
-					payee_name: 'Car Insurance',
-					category_name: 'Auto & Transport',
-					amount: -120000, // $120.00
-					frequency: 'everyOtherMonth',
-					date_next: new SvelteDate(
-						new SvelteDate().setDate(new SvelteDate().getDate() + 25)
-					).toISOString(), // 25 days from now
-					date_first: new SvelteDate(
-						new SvelteDate().setMonth(new SvelteDate().getMonth() - 10)
-					).toISOString(), // 10 months ago
-					memo: 'Bi-monthly car insurance payment',
-					monthly_amount: -60000, // Monthly equivalent for bi-monthly payment
-					account_id: 'demo-account-1',
-					account_name: 'Checking Account',
-					deleted: false,
-					published: true,
-					subtransactions: []
-				},
-				{
-					id: 'demo-bill-7',
-					budget_id: 'demo',
-					payee_name: 'Credit Card',
-					category_name: 'Credit Card',
-					amount: -200000, // $200.00
-					frequency: 'monthly',
-					date_next: new SvelteDate(
-						new SvelteDate().setDate(new SvelteDate().getDate() + 7)
-					).toISOString(), // 7 days from now
-					date_first: new SvelteDate(
-						new SvelteDate().setMonth(new SvelteDate().getMonth() - 6)
-					).toISOString(), // 6 months ago
-					memo: 'Monthly credit card payment',
-					monthly_amount: -200000,
-					account_id: 'demo-account-1',
-					account_name: 'Checking Account',
-					deleted: false,
-					published: true,
-					subtransactions: []
-				},
-				// yearly
-				{
-					id: 'demo-bill-8',
-					budget_id: 'demo',
-					payee_name: 'Car Registration',
-					category_name: 'Auto & Transport',
-					amount: -60000, // $60.00
-					frequency: 'yearly',
-					date_next: new SvelteDate(
-						new SvelteDate().setDate(new SvelteDate().getDate() + 30)
-					).toISOString(), // 30 days from now
-					date_first: new SvelteDate(
-						new SvelteDate().setFullYear(new SvelteDate().getFullYear() - 2)
-					).toISOString(), // 2 years ago
-					memo: 'Yearly car registration fee',
-					monthly_amount: -5000, // Monthly equivalent for yearly payment
-					account_id: 'demo-account-1',
-					account_name: 'Checking Account',
-					deleted: false,
-					published: true,
-					subtransactions: []
-				}
-			];
-
-			await db.scheduled_transactions.bulkPut(fakeBills);
-
-			await db.budgets.update(budgetId, {
-				accounts: [
-					{
-						id: 'demo-account-1',
-						name: 'Checking Account',
-						type: 'checking',
-						on_budget: true,
-						closed: false,
-						deleted: false,
-						balance: 5000000, // $5,000.00
-						cleared_balance: 5000000,
-						uncleared_balance: 0,
-						transfer_payee_id: null
-					},
-					{
-						id: 'demo-account-2',
-						name: 'Savings Account',
-						type: 'savings',
-						on_budget: true,
-						closed: false,
-						deleted: false,
-						balance: 10000000, // $10,000.00
-						cleared_balance: 10000000,
-						uncleared_balance: 0,
-						transfer_payee_id: null
-					},
-					{
-						id: 'demo-account-3',
-						name: 'Credit Card',
-						type: 'creditCard',
-						on_budget: true,
-						closed: false,
-						deleted: false,
-						balance: -200000, // -$2,000.00
-						cleared_balance: -200000,
-						uncleared_balance: 0,
-						transfer_payee_id: null
-					}
-				]
-			});
+			await createFakeDataForDemo();
 
 			fetchingData = false;
 
@@ -859,6 +647,21 @@
 			}
 		}
 		return undefined;
+	}
+
+	function getCategory(categoryId: string | null | undefined): Category | null {
+		if (!budgetId || !categoryId) return null;
+
+		const groups = $categoryGroups?.filter((g) => g.budget_id === budgetId) ?? [];
+
+		for (const group of groups) {
+			const category = group.categories.find((c) => c.id === categoryId);
+			if (category) {
+				return category;
+			}
+		}
+
+		return null;
 	}
 
 	// MARK: - Bill creation / update / delete handlers
@@ -1732,7 +1535,12 @@
 						{bill.payee_name ?? '{payee unspecified}'}
 					</p>
 					<ul>
-						<li>Category: {bill.category_name}</li>
+						<li>
+							Category: {bill.category_name}
+							{#if getCategory(bill.category_id)}
+								({getCategory(bill.category_id)?.category_group_name})
+							{/if}
+						</li>
 						<li style="margin-top: 0.5em;">Account: {bill.account_name}</li>
 						<li style="margin-top: 0.5em;">
 							<em>
