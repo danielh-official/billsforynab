@@ -16,7 +16,6 @@
 	import { db } from '$lib/db';
 	import { resolve } from '$app/paths';
 	import type {
-		CustomBudgetDetail,
 		CustomCategoryGroupWithCategories,
 		CustomScheduledTransactionDetail
 	} from '$lib/db';
@@ -30,6 +29,7 @@
 		unsupportedFrequencies,
 		updateBillInYNAB
 	} from '$lib';
+	import { browser } from '$app/environment';
 
 	// MARK: - Mount and budgetId extraction
 
@@ -42,11 +42,15 @@
 	let allowsBothReadAndWriteAccess: boolean = $state(false);
 
 	$effect(() => {
+        if (!browser) return;
+
 		const ynabTokenWrite = sessionStorage.getItem('ynab_token_write');
 		allowsBothReadAndWriteAccess = ynabTokenWrite === 'true';
 	});
 
 	$effect(() => {
+        if (!browser) return;
+
 		const id = page.params.id;
 
 		if (!id) {
@@ -54,26 +58,16 @@
 			return;
 		}
 
-		// Async check for budget existence in DB
-		(async () => {
-			const budget = await db.budgets.get(id);
-
-			if (!budget) {
-				goto(resolve('/'));
-				return;
-			}
-
-			budgetId = id;
-		})();
+        budgetId = id;
 	});
 
 	// MARK: - Fetching current budget from IndexedDB with live updates
 
-	let currentBudget = $state<CustomBudgetDetail | null>(null);
+	let currentBudget = liveQuery(() => db.budgets.get(budgetId!));
 
 	let availableAccounts = $derived.by(() => {
 		return (
-			currentBudget?.accounts
+			$currentBudget?.accounts
 				?.filter((account) => !(account.deleted || account.closed))
 				?.sort((a, b) => a.name.localeCompare(b.name)) ?? []
 		);
@@ -121,18 +115,6 @@
 				return 'Other';
 		}
 	}
-
-	$effect(() => {
-		if (!budgetId) return;
-
-		const subscription = liveQuery(() =>
-			db.budgets.where('id').equals(budgetId!).first()
-		).subscribe((budget) => {
-			currentBudget = budget ?? null;
-		});
-
-		return () => subscription.unsubscribe();
-	});
 
 	// MARK: - Fetching scheduled transactions for budget
 
@@ -230,7 +212,7 @@
 
 		// Get last knowledge of server
 		const lastKnowledgeOfServerOfScheduledTransactionsForBudget =
-			currentBudget?.server_knowledge?.scheduled_transactions;
+			$currentBudget?.server_knowledge?.scheduled_transactions;
 
 		if (lastKnowledgeOfServerOfScheduledTransactionsForBudget) {
 			endpoint += `?last_knowledge_of_server=${lastKnowledgeOfServerOfScheduledTransactionsForBudget}`;
@@ -275,7 +257,8 @@
 		const newScheduledTransactionsServerKnowledge =
 			scheduledTransactionsResponseJson.data.server_knowledge;
 
-		const existingCategoriesServerKnowledge = currentBudget?.server_knowledge?.category_groups || 0;
+		const existingCategoriesServerKnowledge =
+			$currentBudget?.server_knowledge?.category_groups || 0;
 
 		// MARK: - Update budget
 		// Do this even though we don't have server knowledge for category groups yet,
@@ -297,7 +280,7 @@
 
 		// Get last knowledge of server
 		const lastKnowledgeOfServerOfCategoryGroupsForBudget =
-			currentBudget?.server_knowledge?.category_groups || 0;
+			$currentBudget?.server_knowledge?.category_groups || 0;
 
 		if (lastKnowledgeOfServerOfCategoryGroupsForBudget) {
 			endpoint += `?last_knowledge_of_server=${lastKnowledgeOfServerOfCategoryGroupsForBudget}`;
@@ -413,6 +396,8 @@
 	});
 
 	$effect(() => {
+        if (!browser) return;
+
 		if (typeof localStorage === 'undefined') return;
 
 		const storedSortBy = localStorage.getItem('sort_by');
@@ -428,6 +413,7 @@
 	});
 
 	$effect(() => {
+        if (!browser) return;
 		if (typeof localStorage === 'undefined') return;
 		localStorage.setItem('sort_by', sortBy);
 		localStorage.setItem('sort_direction', sortDirection);
@@ -435,27 +421,17 @@
 
 	// MARK: - Bills list with live updates from IndexedDB
 
-	let rawBills = $state<CustomScheduledTransactionDetail[]>([]);
-
-	$effect(() => {
-		if (!budgetId) return;
-
-		const subscription = liveQuery(async () => {
-			return db.scheduled_transactions
-				.where('budget_id')
-				.equals(budgetId!)
-				.and((transaction) => !transaction.deleted && transaction.amount < 0)
-				.toArray();
-		}).subscribe((transactions) => {
-			rawBills = transactions || [];
-		});
-
-		return () => subscription.unsubscribe();
-	});
+	let rawBills = liveQuery(() =>
+		db.scheduled_transactions
+			.where('budget_id')
+			.equals(budgetId!)
+			.and((transaction) => !transaction.deleted && transaction.amount < 0)
+			.toArray()
+	);
 
 	// Sort transactions reactively based on sortBy and sortDirection
 	let bills = $derived.by(() => {
-		const transactions = rawBills;
+		const transactions = $rawBills;
 		if (!transactions) return [];
 
 		if (sortBy === 'date_next') {
@@ -543,7 +519,7 @@
 	// MARK: - Amount formatting
 
 	function determineAmountStringFromBudgetCurrency(amount: number) {
-		const budgetCurrency = currentBudget?.currency_format?.iso_code || 'USD';
+		const budgetCurrency = $currentBudget?.currency_format?.iso_code || 'USD';
 		const formatter = new Intl.NumberFormat(undefined, {
 			style: 'currency',
 			currency: budgetCurrency
@@ -604,7 +580,7 @@
 	// MARK: - Total of bills per month
 
 	let totalBillsPerMonth = $derived.by(() => {
-		const transactions = rawBills;
+		const transactions = $rawBills;
 		if (!transactions) return 0;
 
 		// Filter out excluded bills
@@ -644,7 +620,7 @@
 	// MARK: - Find category by id
 	function getCategoryName(categoryId: string | undefined | null) {
 		if (!categoryId || !budgetId) return undefined;
-		for (const group of categoryGroups.filter((g) => g.budget_id === budgetId)) {
+		for (const group of $categoryGroups.filter((g) => g.budget_id === budgetId)) {
 			const category = group.categories.find((c) => c.id === categoryId);
 			if (category) {
 				return category.name;
@@ -656,7 +632,7 @@
 	function getCategory(categoryId: string | null | undefined): Category | null {
 		if (!budgetId || !categoryId) return null;
 
-		const groups = categoryGroups?.filter((g) => g.budget_id === budgetId) ?? [];
+		const groups = $categoryGroups?.filter((g) => g.budget_id === budgetId) ?? [];
 
 		for (const group of groups) {
 			const category = group.categories.find((c) => c.id === categoryId);
@@ -724,7 +700,7 @@
 
 		// Editing existing bill
 		if (editingBillId) {
-			const existingBill = rawBills.find((b) => b.id === editingBillId);
+			const existingBill = $rawBills.find((b) => b.id === editingBillId);
 			if (!existingBill) {
 				showToast('Bill not found.', 'error');
 				return;
@@ -985,33 +961,25 @@
 		showToast('Draft published to YNAB.', 'success');
 	}
 
-	let categoryGroups = $state<CustomCategoryGroupWithCategories[]>([]);
+	let categoryGroups = liveQuery(() => {
+		return db.category_groups
+			.where('budget_id')
+			.equals(budgetId || '')
+			.toArray()
+			.then((groups) => {
+				groups.sort((a, b) => a.name.localeCompare(b.name));
 
-	$effect(() => {
-		const subscription = liveQuery(() =>
-			db.category_groups
-				.where('budget_id')
-				.equals(budgetId || '')
-				.toArray()
-				.then((groups) => {
-					groups.sort((a, b) => a.name.localeCompare(b.name));
+				groups.forEach((group) => {
+					group.categories.sort((a, b) => a.name.localeCompare(b.name));
+				});
 
-					groups.forEach((group) => {
-						group.categories.sort((a, b) => a.name.localeCompare(b.name));
-					});
-
-					return groups;
-				})
-		).subscribe((result) => {
-			categoryGroups = result || [];
-		});
-
-		return () => subscription.unsubscribe();
+				return groups;
+			});
 	});
 </script>
 
 <svelte:head>
-	<title>Plan &mdash; {currentBudget?.name} | Bills (For YNAB)</title>
+	<title>Plan &mdash; {$currentBudget?.name} | Bills (For YNAB)</title>
 
 	<!-- MARK: Styles -->
 
@@ -1317,8 +1285,8 @@
 						/>
 					</label>
 					<label>
-						Amount {currentBudget?.currency_format?.currency_symbol
-							? `(in ${currentBudget.currency_format.iso_code})`
+						Amount {$currentBudget?.currency_format?.currency_symbol
+							? `(in ${$currentBudget.currency_format.iso_code})`
 							: null}*
 						<input
 							type="number"
@@ -1336,7 +1304,7 @@
 						Category (optional)
 						<select bind:value={billFormData.category_id}>
 							<option value="">Select category</option>
-							{#each categoryGroups as group (group.id)}
+							{#each $categoryGroups as group (group.id)}
 								<optgroup label={group.name}>
 									{#each group.categories as category (category.id)}
 										<option value={category.id}>{category.name}</option>
