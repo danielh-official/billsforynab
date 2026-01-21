@@ -54,14 +54,17 @@
 			return;
 		}
 
-		const budgetIdExistsInDb = db.budgets.get(id).then((budget) => !!budget);
+		// Async check for budget existence in DB
+		(async () => {
+			const budget = await db.budgets.get(id);
+			
+			if (!budget) {
+				goto(resolve('/'));
+				return;
+			}
 
-		if (!budgetIdExistsInDb) {
-			goto(resolve('/'));
-			return;
-		}
-
-		budgetId = id;
+			budgetId = id;
+		})();
 	});
 
 	// MARK: - Fetching current budget from IndexedDB with live updates
