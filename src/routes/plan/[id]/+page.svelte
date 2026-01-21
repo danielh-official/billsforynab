@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { liveQuery } from 'dexie';
+	import { liveQuery, type Observable } from 'dexie';
 	import {
 		ScheduledTransactionFrequency,
 		type ScheduledTransactionDetail,
@@ -146,7 +146,8 @@
 		amount: 0,
 		memo: '',
 		frequency: 'monthly' as ScheduledTransactionFrequency,
-		published: false
+		published: false,
+		category_id: ''
 	});
 
 	function openBillModal(bill?: CustomScheduledTransactionDetail) {
@@ -160,7 +161,8 @@
 				amount: Math.abs(bill.amount) / 1000,
 				memo: bill.memo || '',
 				frequency: bill.frequency as ScheduledTransactionFrequency,
-				published: bill.published ?? false
+				published: bill.published ?? false,
+				category_id: bill.category_id || ''
 			};
 		} else {
 			// Reset for new bill creation
@@ -172,7 +174,8 @@
 				amount: 0,
 				memo: '',
 				frequency: 'monthly',
-				published: false
+				published: false,
+				category_id: ''
 			};
 		}
 		showBillModal = true;
@@ -188,7 +191,8 @@
 			amount: 0,
 			memo: '',
 			frequency: 'monthly',
-			published: false
+			published: false,
+			category_id: ''
 		};
 	}
 
@@ -1145,6 +1149,22 @@
 		setBillSyncing(bill.id, false);
 		showToast('Draft published to YNAB.', 'success');
 	}
+
+	const categoryGroups: Observable<CustomCategoryGroupWithCategories[]> = liveQuery(() =>
+		db.category_groups
+			.where('budget_id')
+			.equals(budgetId || '')
+			.toArray()
+			.then((groups) => {
+				groups.sort((a, b) => a.name.localeCompare(b.name));
+
+				groups.forEach((group) => {
+					group.categories.sort((a, b) => a.name.localeCompare(b.name));
+				});
+
+				return groups;
+			})
+	);
 </script>
 
 <svelte:head>
@@ -1468,6 +1488,19 @@
 					<label>
 						Payee (optional)
 						<input type="text" bind:value={billFormData.payee_name} placeholder="Payee name" />
+					</label>
+					<label>
+						Category (optional)
+						<select bind:value={billFormData.category_id}>
+							<option value="">Select category</option>
+							{#each $categoryGroups as group (group.id)}
+								<optgroup label={group.name}>
+									{#each group.categories as category (category.id)}
+										<option value={category.id}>{category.name}</option>
+									{/each}
+								</optgroup>
+							{/each}
+						</select>
 					</label>
 					<label>
 						Memo (optional)
