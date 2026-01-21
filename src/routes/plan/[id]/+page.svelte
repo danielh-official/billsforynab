@@ -12,7 +12,7 @@
 		type ScheduledTransactionsResponse,
 		type CategoriesResponse,
 		type Category
-	} from 'ynab';
+	} from 'ynab/dist/models';
 	import { db } from '$lib/db';
 	import { resolve } from '$app/paths';
 	import type {

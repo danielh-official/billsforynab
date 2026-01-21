@@ -1,5 +1,5 @@
 import { Dexie, type EntityTable } from 'dexie';
-import type { BudgetDetail, CategoryGroupWithCategories, ScheduledTransactionDetail } from 'ynab';
+import type { BudgetDetail, CategoryGroupWithCategories, ScheduledTransactionDetail } from 'ynab/dist/models';
 
 interface CustomBudgetDetail extends BudgetDetail {
 	is_default?: boolean;

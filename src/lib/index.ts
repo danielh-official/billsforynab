@@ -4,7 +4,7 @@ import type {
 	PostScheduledTransactionWrapper,
 	PutScheduledTransactionWrapper,
 	ScheduledTransactionFrequency
-} from 'ynab';
+} from 'ynab/dist/models';
 import {
 	db,
 	type CustomCategoryGroupWithCategories,

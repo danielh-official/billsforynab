@@ -88,7 +88,7 @@ Always use `$bindable()` for props that need two-way binding:
 - Use strict mode (`strict: true` in tsconfig.json)
 - Always type function parameters and return values
 - Use interfaces for data structures from external APIs
-- Import types with `type` keyword: `import type { BudgetDetail } from 'ynab'`
+- Import types with `type` keyword: `import type { BudgetDetail } from 'ynab/dist/models'`
 
 ### Component Structure
 
