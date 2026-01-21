@@ -1468,8 +1468,8 @@
 								? 'Excluded from calculations'
 								: 'Included in calculations'}
 							aria-label={bill.excluded
-								? `Include bill to ${bill.payee_name ?? '{payee unspecified}'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`
-								: `Exclude bill to ${bill.payee_name ?? '{payee unspecified}'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`}
+								? `Include bill to ${bill.payee_name ?? 'unspecified payee'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`
+								: `Exclude bill to ${bill.payee_name ?? 'unspecified payee'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`}
 						>
 							{bill.excluded ? '👁️' : '✓'}
 						</button>
@@ -1482,7 +1482,7 @@
 								data-tooltip={allowsBothReadAndWriteAccess
 									? 'Edit this bill'
 									: 'You need write access to edit bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
-								aria-label={`Edit bill to ${bill.payee_name ?? '{payee unspecified}'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`}
+								aria-label={`Edit bill to ${bill.payee_name ?? 'unspecified payee'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`}
 							>
 								✏️
 							</button>
@@ -1497,7 +1497,7 @@
 										? `Cannot delete bills with frequency: ${unsupportedFrequencies.join(', ')} due to YNAB API limitations.`
 										: 'Delete this bill'
 									: 'You need write access to delete bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
-								aria-label={`Delete bill to ${bill.payee_name ?? '{payee unspecified}'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`}
+								aria-label={`Delete bill to ${bill.payee_name ?? 'unspecified payee'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`}
 							>
 								🗑️
 							</button>
@@ -1509,7 +1509,7 @@
 									data-tooltip={allowsBothReadAndWriteAccess
 										? 'Bill is draft. Click to publish to YNAB.'
 										: 'You need write access to publish bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
-									aria-label={`Publish draft bill of ${bill.payee_name ?? '{payee unspecified}'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)} to YNAB`}
+									aria-label={`Publish draft bill of ${bill.payee_name ?? 'unspecified payee'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)} to YNAB`}
 								>
 									🚀
 								</button>
@@ -1539,7 +1539,7 @@
 						{determineAmountStringFromBudgetCurrency(-bill.amount)} ({parseFrequencyText(
 							bill.frequency
 						)}) to
-						{bill.payee_name ?? '{payee unspecified}'}
+						{bill.payee_name ?? 'unspecified payee'}
 					</p>
 					<ul>
 						<li>
