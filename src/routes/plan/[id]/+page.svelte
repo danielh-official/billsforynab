@@ -366,7 +366,7 @@
 
 		resettingData = true;
 
-		db.transaction('rw', db.budgets, db.scheduled_transactions, async () => {
+		db.transaction('rw', db.budgets, db.scheduled_transactions, db.category_groups, async () => {
 			await db.scheduled_transactions.where('budget_id').equals(budgetIdValue).delete();
 			await db.category_groups.where('budget_id').equals(budgetIdValue).delete();
 			await db.budgets.update(budgetIdValue, {
