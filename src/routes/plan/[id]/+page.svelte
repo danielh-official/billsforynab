@@ -261,7 +261,6 @@
 			scheduledTransactionsResponseJson.data.scheduled_transactions.map(
 				(scheduledTransaction: ScheduledTransactionDetail) => ({
 					...scheduledTransaction,
-					// Make budget id empty string by default to overcome issue with nullable budget id not being compatible with CustomScheduledTransactionDetail.budget_id nonnullable string type
 					budget_id: budgetId!,
 					published: true,
 					monthly_amount:
