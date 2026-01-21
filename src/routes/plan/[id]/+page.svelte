@@ -8,12 +8,18 @@
 		type Account,
 		type PutScheduledTransactionWrapper,
 		type PostScheduledTransactionWrapper,
-		AccountType
+		AccountType,
+		type ScheduledTransactionsResponse,
+		type CategoriesResponse
 	} from 'ynab';
 	import { db } from '$lib/db';
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
-	import type { CustomBudgetDetail, CustomScheduledTransactionDetail } from '$lib/db';
+	import type {
+		CustomBudgetDetail,
+		CustomCategoryGroupWithCategories,
+		CustomScheduledTransactionDetail
+	} from '$lib/db';
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 	import Toast from '$lib/components/Toast.svelte';
 	import {
@@ -124,7 +130,7 @@
 
 	// MARK: - Fetching scheduled transactions for budget
 
-	let fetchingScheduledTransactions = $state(false);
+	let fetchingData = $state(false);
 	let toastVisible = $state(false);
 	let toastMessage = $state('');
 	let toastType: 'success' | 'error' | 'info' = $state('info');
@@ -186,16 +192,14 @@
 		};
 	}
 
-	// MARK: - Fetch scheduled transactions for budget
+	// MARK: - Fetch data for budget
 
-	async function getScheduledTransactionsForBudget() {
-		fetchingScheduledTransactions = true;
+	async function fetchData() {
+		fetchingData = true;
 
-		const budgetIdValue = budgetId;
-
-		if (!budgetIdValue) {
+		if (!budgetId) {
 			console.error('Budget ID is missing.');
-			fetchingScheduledTransactions = false;
+			fetchingData = false;
 			return;
 		}
 
@@ -378,7 +382,7 @@
 
 			await db.scheduled_transactions.bulkPut(fakeBills);
 
-			await db.budgets.update(budgetIdValue, {
+			await db.budgets.update(budgetId, {
 				accounts: [
 					{
 						id: 'demo-account-1',
@@ -419,65 +423,134 @@
 				]
 			});
 
-			fetchingScheduledTransactions = false;
+			fetchingData = false;
 
 			return;
 		}
 
-		let endpoint = `https://api.ynab.com/v1/budgets/${budgetIdValue}/scheduled_transactions?budget_id=${budgetIdValue}`;
+		// MARK: - Fetch scheduled transactions
+
+		let endpoint = `https://api.ynab.com/v1/budgets/${budgetId}/scheduled_transactions`;
 
 		// Get last knowledge of server
-		const lastKnowledgeOfServerForBudget = currentBudget?.scheduled_transactions_server_knowledge;
+		const lastKnowledgeOfServerOfScheduledTransactionsForBudget =
+			currentBudget?.server_knowledge?.scheduled_transactions;
 
-		if (lastKnowledgeOfServerForBudget) {
-			endpoint += `&last_knowledge_of_server=${lastKnowledgeOfServerForBudget}`;
+		if (lastKnowledgeOfServerOfScheduledTransactionsForBudget) {
+			endpoint += `?last_knowledge_of_server=${lastKnowledgeOfServerOfScheduledTransactionsForBudget}`;
 		}
 
-		const response = await fetch(endpoint, {
+		const scheduledTransactionsFetch = await fetch(endpoint, {
 			headers: {
 				Authorization: `Bearer ${sessionStorage.getItem('ynab_access_token')}`
 			}
 		});
 
-		if (!response.ok) {
-			console.error('Failed to fetch data:', response.statusText);
+		if (!scheduledTransactionsFetch.ok) {
+			console.error('Failed to fetch data:', scheduledTransactionsFetch.statusText);
 
-			if (response.status === 401) {
+			if (scheduledTransactionsFetch.status === 401) {
 				toastMessage = 'Unauthorized. Please login again at the home page.';
 			} else {
-				toastMessage = `Failed to fetch data: ${response.statusText}`;
+				toastMessage = `Failed to fetch data: ${scheduledTransactionsFetch.statusText}`;
 			}
 
 			toastType = 'error';
 			toastVisible = true;
-			fetchingScheduledTransactions = false;
+			fetchingData = false;
 			return;
 		}
 
-		const responseData = await response.json();
+		const scheduledTransactionsResponseJson: ScheduledTransactionsResponse =
+			await scheduledTransactionsFetch.json();
 
-		const scheduledTransactions = responseData.data.scheduled_transactions.map(
-			(transaction: ScheduledTransactionDetail) => ({
-				...transaction,
-				budget_id: budgetIdValue,
-				published: true,
-				monthly_amount:
-					transaction.amount *
-					getFrequencyMultiplier(transaction.frequency as ScheduledTransactionFrequency)
-			})
-		);
+		let nonNullBudgetId = budgetId;
 
-		const newServerKnowledge = responseData.data.server_knowledge;
+		const scheduledTransactions: CustomScheduledTransactionDetail[] =
+			scheduledTransactionsResponseJson.data.scheduled_transactions.map(
+				(scheduledTransaction: ScheduledTransactionDetail) => ({
+					...scheduledTransaction,
+					// Make budget id empty string by default to overcome issue with nullable budget id not being compatible with CustomScheduledTransactionDetail.budget_id nonnullable string type
+					budget_id: nonNullBudgetId,
+					published: true,
+					monthly_amount:
+						scheduledTransaction.amount *
+						getFrequencyMultiplier(scheduledTransaction.frequency as ScheduledTransactionFrequency)
+				})
+			);
 
-		// Update the budget in IndexedDB with the new scheduled transactions and server knowledge
-		await db.scheduled_transactions.bulkPut(scheduledTransactions);
+		const newScheduledTransactionsServerKnowledge =
+			scheduledTransactionsResponseJson.data.server_knowledge;
 
-		await db.budgets.update(budgetIdValue, {
-			scheduled_transactions_server_knowledge: newServerKnowledge,
-			scheduled_transactions_last_fetched: new Date()
+		// MARK: - Update budget
+		// Do this even though we don't have server knowledge for category groups yet,
+		// because if category groups fetch fails, we at least have server knowledge for scheduled transactions
+		await db.budgets.update(budgetId, {
+			server_knowledge: {
+				scheduled_transactions: newScheduledTransactionsServerKnowledge,
+				category_groups: 0
+			},
+			last_fetched: new Date()
 		});
 
-		fetchingScheduledTransactions = false;
+		// Bulk put scheduled transactions
+		await db.scheduled_transactions.bulkPut(scheduledTransactions);
+
+		// MARK: - Now fetch category groups with categories nested in each
+
+		endpoint = `https://api.ynab.com/v1/budgets/${budgetId}/categories`;
+
+		// Get last knowledge of server
+		const lastKnowledgeOfServerOfCategoryGroupsForBudget =
+			currentBudget?.server_knowledge?.category_groups;
+
+		if (lastKnowledgeOfServerOfCategoryGroupsForBudget) {
+			endpoint += `?last_knowledge_of_server=${lastKnowledgeOfServerOfCategoryGroupsForBudget}`;
+		}
+
+		const categoriesFetch = await fetch(endpoint, {
+			headers: {
+				Authorization: `Bearer ${sessionStorage.getItem('ynab_access_token')}`
+			}
+		});
+
+		if (!categoriesFetch.ok) {
+			console.error('Failed to fetch categories:', categoriesFetch.statusText);
+
+			if (categoriesFetch.status === 401) {
+				toastMessage = 'Unauthorized. Please login again at the home page.';
+			} else {
+				toastMessage = `Failed to fetch categories: ${categoriesFetch.statusText}`;
+			}
+			toastType = 'error';
+			toastVisible = true;
+			fetchingData = false;
+			return;
+		}
+
+		const categoriesResponseJson: CategoriesResponse = await categoriesFetch.json();
+
+		const newCategoryGroupsServerKnowledge = categoriesResponseJson.data.server_knowledge;
+
+		// MARK: - Update budget Again
+		await db.budgets.update(budgetId, {
+			server_knowledge: {
+				scheduled_transactions: newScheduledTransactionsServerKnowledge,
+				category_groups: newCategoryGroupsServerKnowledge
+			},
+			last_fetched: new Date()
+		});
+
+		const categoryGroupWithCategories: CustomCategoryGroupWithCategories[] =
+			categoriesResponseJson.data.category_groups.map((group) => ({
+				...group,
+				budget_id: nonNullBudgetId
+			}));
+
+		// Bulk put category groups with categories
+		await db.category_groups.bulkPut(categoryGroupWithCategories);
+
+		fetchingData = false;
 	}
 
 	// MARK: - Resetting data for budget
@@ -505,8 +578,11 @@
 		db.transaction('rw', db.budgets, db.scheduled_transactions, async () => {
 			await db.scheduled_transactions.where('budget_id').equals(budgetIdValue).delete();
 			await db.budgets.update(budgetIdValue, {
-				scheduled_transactions_server_knowledge: 0,
-				scheduled_transactions_last_fetched: undefined
+				server_knowledge: {
+					scheduled_transactions: 0,
+					category_groups: 0
+				},
+				last_fetched: undefined
 			});
 		})
 			.catch((error) => {
@@ -1458,8 +1534,8 @@
 		<!-- MARK: - Actions -->
 		<div class="actions">
 			<a href={resolve('/')}>Back to Plans</a>
-			<button disabled={fetchingScheduledTransactions} onclick={getScheduledTransactionsForBudget}>
-				{fetchingScheduledTransactions ? 'Fetching...' : 'Fetch Data'}
+			<button disabled={fetchingData} onclick={fetchData}>
+				{fetchingData ? 'Fetching...' : 'Fetch Data'}
 			</button>
 			<button disabled={resettingData} onclick={resetDataForBudget}>
 				{resettingData ? 'Resetting...' : 'Reset Data'}
