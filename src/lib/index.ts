@@ -113,7 +113,7 @@ export async function createBillInYNAB(
 		return { success: false, error: 'No access token found' };
 	}
 
-	// Prepare payload for YNAB API - convert amount from milliunits to milliunits if needed
+	// Prepare payload for YNAB API
 	const payload: PostScheduledTransactionWrapper = {
 		scheduled_transaction: {
 			account_id: billData.account_id,
