@@ -44,6 +44,28 @@
 	const atLeastOneNoticeDismissed = $derived.by(() => {
 		return !showApiRestrictionNotice || !showApiScheduledTransactionsNotice;
 	});
+	// Demo mode access type (read-only or read-and-write)
+	let demoAccessType = $state<'read-only' | 'read-and-write'>('read-only');
+
+	// Load demo access type from sessionStorage on mount
+	$effect(() => {
+		if (!browser || !isDemo) return;
+
+		const stored = sessionStorage.getItem('demo_access_type');
+		if (stored === 'read-only' || stored === 'read-and-write') {
+			demoAccessType = stored;
+		}
+	});
+
+	// Save demo access type to sessionStorage when it changes
+	function toggleDemoAccessType() {
+		demoAccessType = demoAccessType === 'read-only' ? 'read-and-write' : 'read-only';
+		if (browser) {
+			sessionStorage.setItem('demo_access_type', demoAccessType);
+			// Dispatch custom event to notify other components
+			window.dispatchEvent(new CustomEvent('demoAccessTypeChange', { detail: demoAccessType }));
+		}
+	}
 </script>
 
 <svelte:head>
@@ -178,6 +200,52 @@
 			cursor: pointer;
 			background-color: transparent;
 			color: #007bff;
+        }
+		
+        .demo-access-toggle {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 0.75rem;
+			margin-top: 1rem;
+			padding: 0.75rem;
+			background-color: #fff;
+			border-radius: 6px;
+			border: 1px solid #ffe58f;
+		}
+
+		.demo-access-toggle > div:first-child {
+			font-weight: 600;
+			font-size: 0.95rem;
+		}
+
+		.demo-toggle-button {
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
+			padding: 0.5rem 1rem;
+			border: 2px solid #d4a373;
+			border-radius: 4px;
+			background-color: #f5f5f5;
+			cursor: pointer;
+			font-size: 0.9rem;
+			transition: all 0.2s ease;
+		}
+
+		.demo-toggle-button:hover {
+			background-color: #e8e8e8;
+		}
+
+		.demo-toggle-button.active {
+			background-color: #d4a373;
+			color: #fff;
+			font-weight: 600;
+		}
+
+		.access-description {
+			font-size: 0.85rem;
+			margin-top: 0.5rem;
+			font-style: italic;
 		}
 	</style>
 </svelte:head>
@@ -189,6 +257,32 @@
 			<div>
 				You are currently viewing the demo plan. This plan does not receive or send any data from
 				YNAB. All data is generated for demonstration purposes only.
+			</div>
+			<div class="demo-access-toggle">
+				<div aria-label="Access Type">Access Type:</div>
+				<button
+					class="demo-toggle-button"
+					class:active={demoAccessType === 'read-only'}
+					onclick={toggleDemoAccessType}
+					aria-label="Toggle to read-only access"
+				>
+					🔒 Read-Only
+				</button>
+				<button
+					class="demo-toggle-button"
+					class:active={demoAccessType === 'read-and-write'}
+					onclick={toggleDemoAccessType}
+					aria-label="Toggle to read and write access"
+				>
+					✏️ Read &amp; Write
+				</button>
+			</div>
+			<div class="access-description">
+				{#if demoAccessType === 'read-only'}
+					With read-only access, you can view bills but cannot create, edit, or delete them.
+				{:else}
+					With read and write access, you can create, edit, and delete bills in YNAB.
+				{/if}
 			</div>
 		</div>
 	</div>

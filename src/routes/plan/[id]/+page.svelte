@@ -40,12 +40,43 @@
 	});
 
 	let allowsBothReadAndWriteAccess: boolean = $state(false);
+	let demoAccessType = $state<'read-only' | 'read-and-write'>('read-only');
+
+	// Load demo access type from sessionStorage and listen for changes
+	$effect(() => {
+		if (!browser) return;
+
+		// Initial load
+		const stored = sessionStorage.getItem('demo_access_type');
+		if (stored === 'read-only' || stored === 'read-and-write') {
+			demoAccessType = stored;
+		}
+
+		// Listen for custom events when demo access type changes
+		const handleDemoAccessChange = (event: CustomEvent<'read-only' | 'read-and-write'>) => {
+			demoAccessType = event.detail;
+		};
+
+		window.addEventListener('demoAccessTypeChange', handleDemoAccessChange as EventListener);
+
+		return () => {
+			window.removeEventListener('demoAccessTypeChange', handleDemoAccessChange as EventListener);
+		};
+	});
 
 	$effect(() => {
 		if (!browser) return;
 
 		const ynabTokenWrite = sessionStorage.getItem('ynab_token_write');
 		allowsBothReadAndWriteAccess = ynabTokenWrite === 'true';
+	});
+
+	// Effective write access considering both real access and demo mode settings
+	const effectiveWriteAccess = $derived.by(() => {
+		if (isDemo) {
+			return demoAccessType === 'read-and-write';
+		}
+		return allowsBothReadAndWriteAccess;
 	});
 
 	$effect(() => {
@@ -1412,12 +1443,12 @@
 			<button disabled={resettingData} onclick={resetDataForBudget}>
 				{resettingData ? 'Resetting...' : 'Reset Data'}
 			</button>
-			{#if allowsBothReadAndWriteAccess}
+			{#if effectiveWriteAccess}
 				<button
 					class="create-bill-button"
-					disabled={!allowsBothReadAndWriteAccess}
+					disabled={!effectiveWriteAccess}
 					onclick={() => openBillModal()}
-					data-tooltip={allowsBothReadAndWriteAccess
+					data-tooltip={effectiveWriteAccess
 						? null
 						: 'You need write access to create bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
 				>
@@ -1486,12 +1517,12 @@
 							{bill.excluded ? '👁️' : '✓'}
 						</button>
 						<!-- MARK: - Edit/Delete/Publish Buttons -->
-						{#if allowsBothReadAndWriteAccess}
+						{#if effectiveWriteAccess}
 							<button
 								class="edit-bill-button"
-								disabled={!allowsBothReadAndWriteAccess || billsBeingSynced.has(bill.id)}
+								disabled={!effectiveWriteAccess || billsBeingSynced.has(bill.id)}
 								onclick={() => openBillModal(bill)}
-								data-tooltip={allowsBothReadAndWriteAccess
+								data-tooltip={effectiveWriteAccess
 									? 'Edit this bill'
 									: 'You need write access to edit bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
 								aria-label={`Edit bill to ${bill.payee_name ?? 'unspecified payee'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`}
@@ -1500,11 +1531,11 @@
 							</button>
 							<button
 								class="delete-bill-button"
-								disabled={!allowsBothReadAndWriteAccess ||
+								disabled={!effectiveWriteAccess ||
 									billsBeingSynced.has(bill.id) ||
 									unsupportedFrequencies.includes(bill.frequency)}
 								onclick={() => handleDeleteBill(bill)}
-								data-tooltip={allowsBothReadAndWriteAccess
+								data-tooltip={effectiveWriteAccess
 									? unsupportedFrequencies.includes(bill.frequency)
 										? `Cannot delete bills with frequency: ${unsupportedFrequencies.join(', ')} due to YNAB API limitations.`
 										: 'Delete this bill'
@@ -1516,9 +1547,9 @@
 							{#if !bill.published}
 								<button
 									class="publish-bill-button"
-									disabled={!allowsBothReadAndWriteAccess || billsBeingSynced.has(bill.id)}
+									disabled={!effectiveWriteAccess || billsBeingSynced.has(bill.id)}
 									onclick={() => publishDraftBill(bill)}
-									data-tooltip={allowsBothReadAndWriteAccess
+									data-tooltip={effectiveWriteAccess
 										? 'Bill is draft. Click to publish to YNAB.'
 										: 'You need write access to publish bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
 									aria-label={`Publish draft bill of ${bill.payee_name ?? 'unspecified payee'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)} to YNAB`}
