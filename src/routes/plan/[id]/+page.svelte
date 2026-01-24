@@ -42,14 +42,14 @@
 	let allowsBothReadAndWriteAccess: boolean = $state(false);
 
 	$effect(() => {
-        if (!browser) return;
+		if (!browser) return;
 
 		const ynabTokenWrite = sessionStorage.getItem('ynab_token_write');
 		allowsBothReadAndWriteAccess = ynabTokenWrite === 'true';
 	});
 
 	$effect(() => {
-        if (!browser) return;
+		if (!browser) return;
 
 		const id = page.params.id;
 
@@ -58,7 +58,7 @@
 			return;
 		}
 
-        budgetId = id;
+		budgetId = id;
 	});
 
 	// MARK: - Fetching current budget from IndexedDB with live updates
@@ -396,7 +396,7 @@
 	});
 
 	$effect(() => {
-        if (!browser) return;
+		if (!browser) return;
 
 		if (typeof localStorage === 'undefined') return;
 
@@ -413,7 +413,7 @@
 	});
 
 	$effect(() => {
-        if (!browser) return;
+		if (!browser) return;
 		if (typeof localStorage === 'undefined') return;
 		localStorage.setItem('sort_by', sortBy);
 		localStorage.setItem('sort_direction', sortDirection);
@@ -1517,7 +1517,7 @@
 						{determineAmountStringFromBudgetCurrency(-bill.amount)} ({parseFrequencyText(
 							bill.frequency
 						)}) to
-						{bill.payee_name ?? 'unspecified payee'}
+						<strong>{bill.payee_name ?? 'unspecified payee'}</strong>
 					</p>
 					<ul>
 						<li>
