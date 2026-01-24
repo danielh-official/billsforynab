@@ -569,9 +569,9 @@
 	 * getDueDateColors("2026-03-01T00:00:00") // { backgroundColor: "rgb(150, 220, 40)", textColor: "#000000" }
 	 */
 	function getDueDateColors(dateString: string): { backgroundColor: string; textColor: string } {
-		const today = new Date();
+		const today = new SvelteDate();
 		today.setHours(0, 0, 0, 0);
-		const targetDate = new Date(dateString);
+		const targetDate = new SvelteDate(dateString);
 		targetDate.setHours(0, 0, 0, 0);
 		const diffTime = targetDate.getTime() - today.getTime();
 		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
