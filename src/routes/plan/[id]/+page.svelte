@@ -532,7 +532,7 @@
 	function formatLastFetched(lastFetched?: Date) {
 		if (!lastFetched) return 'Never';
 
-		const date = new Date(lastFetched);
+		const date = lastFetched instanceof Date ? lastFetched : new Date(lastFetched);
 		const now = new Date();
 		const diffMs = now.getTime() - date.getTime();
 		const diffMins = Math.floor(diffMs / (1000 * 60));
