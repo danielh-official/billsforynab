@@ -248,15 +248,47 @@
 			flex-direction: column;
 		}
 
+		.api-warning {
+			max-width: 600px;
+			padding: 1rem;
+			background-color: #fff3cd;
+			border: 1px solid #ffc107;
+			border-radius: 4px;
+			color: #856404;
+			text-align: center;
+		}
+
+		.api-warning strong {
+			display: block;
+			margin-bottom: 0.5rem;
+		}
+
 		@media (prefers-color-scheme: dark) {
 			.table th {
 				background-color: #444;
+			}
+
+			.api-warning {
+				background-color: #664d03;
+				border-color: #997404;
+				color: #ffecb5;
 			}
 		}
 	</style>
 </svelte:head>
 
 <div class="container">
+	<div class="api-warning">
+		<strong>⚠️ API Restriction Notice</strong>
+		<p>
+			The YNAB API client for this app is currently restricted to 25 access tokens. If you encounter
+			issues logging in, please see the <a
+				href="https://github.com/danielh-official/billsforynab/blob/main/GUIDE.md#api-restriction-notice"
+				target="_blank"
+				rel="noopener noreferrer">user guide</a
+			> for instructions on setting up the app locally with your own YNAB API client.
+		</p>
+	</div>
 	{#if authToken}
 		<div class="logged-in-message">
 			<p>Access token found. You are logged in with {accessType}.</p>
