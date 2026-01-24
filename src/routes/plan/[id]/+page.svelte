@@ -549,11 +549,24 @@
 
 	// MARK: - Due date color coding
 
+	// Color coding constants
+	const RED_RANGE_DAYS = 7; // 0-7 days: Red gradient
+	const YELLOW_RANGE_DAYS = 30; // 8-30 days: Yellow gradient
+	const GREEN_RANGE_DAYS = 30; // Days for green gradient transition (31-60 days)
+	const TEXT_COLOR_THRESHOLD = 0.5; // Ratio threshold for switching text color
+
 	/**
 	 * Calculate gradient colors for due dates based on proximity to today
 	 * Red (closest) -> Yellow (mid-range) -> Green (furthest)
-	 * @param dateString - The due date string
-	 * @returns Object with background color and text color
+	 * @param dateString - The due date string in ISO 8601 format (e.g., "2026-01-26T00:00:00")
+	 * @returns Object with backgroundColor (CSS color string) and textColor (CSS color string)
+	 * @example
+	 * // Returns red for dates within 7 days
+	 * getDueDateColors("2026-01-26T00:00:00") // { backgroundColor: "rgb(255, 0, 0)", textColor: "#FFFFFF" }
+	 * // Returns yellow for dates 8-30 days away
+	 * getDueDateColors("2026-02-15T00:00:00") // { backgroundColor: "rgb(220, 200, 0)", textColor: "#000000" }
+	 * // Returns green for dates 31+ days away
+	 * getDueDateColors("2026-03-01T00:00:00") // { backgroundColor: "rgb(150, 220, 40)", textColor: "#000000" }
 	 */
 	function getDueDateColors(dateString: string): { backgroundColor: string; textColor: string } {
 		const today = new Date();
@@ -563,11 +576,6 @@
 		const diffTime = targetDate.getTime() - today.getTime();
 		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-		// Define the ranges
-		const redRange = 7; // 0-7 days: Red
-		const yellowRange = 30; // 8-30 days: Yellow
-		// 31+ days: Green
-
 		let backgroundColor: string;
 		let textColor: string;
 
@@ -575,27 +583,27 @@
 			// Overdue: Dark red
 			backgroundColor = '#8B0000';
 			textColor = '#FFFFFF';
-		} else if (diffDays <= redRange) {
+		} else if (diffDays <= RED_RANGE_DAYS) {
 			// 0-7 days: Red gradient
-			const ratio = diffDays / redRange;
+			const ratio = diffDays / RED_RANGE_DAYS;
 			// Transition from bright red to orange
 			const red = 255;
 			const green = Math.round(ratio * 100); // 0 to 100
 			const blue = 0;
 			backgroundColor = `rgb(${red}, ${green}, ${blue})`;
 			textColor = '#FFFFFF';
-		} else if (diffDays <= yellowRange) {
+		} else if (diffDays <= YELLOW_RANGE_DAYS) {
 			// 8-30 days: Yellow gradient
-			const ratio = (diffDays - redRange) / (yellowRange - redRange);
+			const ratio = (diffDays - RED_RANGE_DAYS) / (YELLOW_RANGE_DAYS - RED_RANGE_DAYS);
 			// Transition from orange/yellow to light yellow
 			const red = Math.round(255 - ratio * 55); // 255 to 200
 			const green = Math.round(100 + ratio * 155); // 100 to 255
 			const blue = 0;
 			backgroundColor = `rgb(${red}, ${green}, ${blue})`;
-			textColor = ratio > 0.5 ? '#000000' : '#FFFFFF';
+			textColor = ratio > TEXT_COLOR_THRESHOLD ? '#000000' : '#FFFFFF';
 		} else {
-			// 31+ days: Green gradient
-			const ratio = Math.min((diffDays - yellowRange) / 30, 1); // Cap at 60 days
+			// 31+ days: Green gradient (capped at 60 days)
+			const ratio = Math.min((diffDays - YELLOW_RANGE_DAYS) / GREEN_RANGE_DAYS, 1);
 			// Transition from light green to darker green
 			const red = Math.round(200 - ratio * 110); // 200 to 90
 			const green = Math.round(255 - ratio * 75); // 255 to 180
@@ -1565,6 +1573,7 @@
 		<h1>Bills</h1>
 		<div class="bill-container">
 			{#each bills as bill (bill.id)}
+				{@const dueDateColors = getDueDateColors(bill.date_next)}
 				{#if billsBeingSynced.has(bill.id)}
 					<!-- loading state marker; no content change needed -->
 				{/if}
@@ -1643,8 +1652,7 @@
 							<strong>
 								Due: <span
 									class="due-date-badge"
-									style="background-color: {getDueDateColors(bill.date_next)
-										.backgroundColor}; color: {getDueDateColors(bill.date_next).textColor};"
+									style="background-color: {dueDateColors.backgroundColor}; color: {dueDateColors.textColor};"
 								>
 									{convertToReadableDate(bill.date_next)} ({getRelativeDate(bill.date_next)})
 								</span>
