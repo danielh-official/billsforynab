@@ -6,6 +6,60 @@ Welcome to Bills (For YNAB)!
 
 This app helps you track and visualize your recurring bills from YNAB.
 
+## API Restriction Notice
+
+> [!WARNING]
+> The YNAB API client for this app is currently restricted to 25 access tokens. If you encounter issues logging in, you can set up the app locally with your own YNAB API client.
+
+### Setting Up Your Own Instance
+
+If you're unable to log in due to the API restriction, follow these steps to run the app locally:
+
+1. **Fork and clone the repository:**
+
+   ```bash
+   git clone https://github.com/YOUR-USERNAME/billsforynab.git
+   cd billsforynab
+   ```
+
+2. **Install dependencies:**
+
+   ```bash
+   bun install
+   ```
+
+3. **Create your own YNAB OAuth application:**
+   - Go to [YNAB Developer Settings](https://app.ynab.com/settings/developer)
+   - Click "New Application"
+   - Enter a name for your application (e.g., "My Bills for YNAB")
+   - In the "Redirect URI(s)" field, enter: `http://localhost:5173/callback` and `http://localhost:5173/callback/write`
+   - Click "Save Application"
+   - Copy the Client ID
+
+4. **Configure your environment:**
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Edit the `.env` file and set:
+
+   ```
+   PUBLIC_ADAPTER='static'
+   PUBLIC_BASE_PATH=''
+   PUBLIC_YNAB_CLIENT_ID='your-client-id-from-step-3'
+   ```
+
+5. **Run the development server:**
+
+   ```bash
+   bun dev
+   ```
+
+6. Open your browser to `http://localhost:5173` and log in with your YNAB account.
+
+For more detailed instructions, see the [README](https://github.com/danielh-official/billsforynab/blob/main/README.md#local-development).
+
 ## Getting Plans
 
 1. Click "Login With YNAB (Read-Only)", select your default plan and click "Authorize"
