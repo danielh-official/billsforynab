@@ -634,6 +634,7 @@ export async function createFakeDataForDemo() {
 				uncleared_balance: 0,
 				transfer_payee_id: null
 			}
-		]
+		],
+		last_fetched: new Date()
 	});
 }
