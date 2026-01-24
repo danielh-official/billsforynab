@@ -23,6 +23,6 @@ Thumbs.db
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-#temp
+# Other
 .legacy/
 package-lock.json
