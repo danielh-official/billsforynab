@@ -15,6 +15,7 @@
 <svelte:head>
 	<title>Bills (For YNAB)</title>
 	<link rel="icon" href={favicon} />
+	<script async defer src="https://buttons.github.io/buttons.js"></script>
 
 	<style>
 		.logo {
@@ -51,6 +52,15 @@
 			align-items: end;
 			padding: 0 2rem 1rem 2rem;
 			font-size: 1rem;
+		}
+
+		.star-section {
+			display: flex;
+			flex-direction: column;
+			align-items: end;
+			padding: 0 2rem 1rem 2rem;
+			font-size: 1rem;
+			gap: 0.5rem;
 		}
 
 		.demo-banner {
@@ -125,6 +135,18 @@
 			rel="noopener noreferrer">guide</a
 		>.
 	</div>
+</div>
+
+<div class="star-section">
+	<div>Like this app? Give us a star.</div>
+	<a
+		class="github-button"
+		href="https://github.com/danielh-official/billsforynab"
+		data-icon="octicon-star"
+		data-size="large"
+		data-show-count="true"
+		aria-label="Star danielh-official/billsforynab on GitHub">Star</a
+	>
 </div>
 
 <div class="write-access-note">
