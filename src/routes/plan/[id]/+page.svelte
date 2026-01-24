@@ -547,6 +547,66 @@
 		}
 	}
 
+	// MARK: - Due date color coding
+
+	/**
+	 * Calculate gradient colors for due dates based on proximity to today
+	 * Red (closest) -> Yellow (mid-range) -> Green (furthest)
+	 * @param dateString - The due date string
+	 * @returns Object with background color and text color
+	 */
+	function getDueDateColors(dateString: string): { backgroundColor: string; textColor: string } {
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		const targetDate = new Date(dateString);
+		targetDate.setHours(0, 0, 0, 0);
+		const diffTime = targetDate.getTime() - today.getTime();
+		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+		// Define the ranges
+		const redRange = 7; // 0-7 days: Red
+		const yellowRange = 30; // 8-30 days: Yellow
+		// 31+ days: Green
+
+		let backgroundColor: string;
+		let textColor: string;
+
+		if (diffDays < 0) {
+			// Overdue: Dark red
+			backgroundColor = '#8B0000';
+			textColor = '#FFFFFF';
+		} else if (diffDays <= redRange) {
+			// 0-7 days: Red gradient
+			const ratio = diffDays / redRange;
+			// Transition from bright red to orange
+			const red = 255;
+			const green = Math.round(ratio * 100); // 0 to 100
+			const blue = 0;
+			backgroundColor = `rgb(${red}, ${green}, ${blue})`;
+			textColor = '#FFFFFF';
+		} else if (diffDays <= yellowRange) {
+			// 8-30 days: Yellow gradient
+			const ratio = (diffDays - redRange) / (yellowRange - redRange);
+			// Transition from orange/yellow to light yellow
+			const red = Math.round(255 - ratio * 55); // 255 to 200
+			const green = Math.round(100 + ratio * 155); // 100 to 255
+			const blue = 0;
+			backgroundColor = `rgb(${red}, ${green}, ${blue})`;
+			textColor = ratio > 0.5 ? '#000000' : '#FFFFFF';
+		} else {
+			// 31+ days: Green gradient
+			const ratio = Math.min((diffDays - yellowRange) / 30, 1); // Cap at 60 days
+			// Transition from light green to darker green
+			const red = Math.round(200 - ratio * 110); // 200 to 90
+			const green = Math.round(255 - ratio * 75); // 255 to 180
+			const blue = Math.round(0 + ratio * 80); // 0 to 80
+			backgroundColor = `rgb(${red}, ${green}, ${blue})`;
+			textColor = '#000000';
+		}
+
+		return { backgroundColor, textColor };
+	}
+
 	// MARK: - Amount formatting
 
 	function determineAmountStringFromBudgetCurrency(amount: number) {
@@ -1069,6 +1129,13 @@
 			gap: 8px;
 			justify-content: flex-end;
 		}
+		.due-date-badge {
+			display: inline-block;
+			padding: 4px 8px;
+			border-radius: 4px;
+			font-weight: 600;
+			transition: all 0.3s ease;
+		}
 		.toggle-exclude {
 			background: white;
 			border: 1px solid #ccc;
@@ -1574,7 +1641,13 @@
 						</li>
 						<li>
 							<strong>
-								Due: {convertToReadableDate(bill.date_next)} ({getRelativeDate(bill.date_next)})
+								Due: <span
+									class="due-date-badge"
+									style="background-color: {getDueDateColors(bill.date_next)
+										.backgroundColor}; color: {getDueDateColors(bill.date_next).textColor};"
+								>
+									{convertToReadableDate(bill.date_next)} ({getRelativeDate(bill.date_next)})
+								</span>
 							</strong>
 						</li>
 					</ul>
