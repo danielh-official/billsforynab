@@ -230,6 +230,7 @@
 			cursor: pointer;
 			font-size: 0.9rem;
 			transition: all 0.2s ease;
+			color: #333;
 		}
 
 		.demo-toggle-button:hover {
