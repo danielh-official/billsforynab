@@ -48,6 +48,5 @@ jobs:
           bun check
 
       - name: Success message
-        if: steps.initial_check.outcome == 'success' || steps.attempt1.outcome == 'success' || steps.attempt2.outcome == 'success' || steps.attempt3.outcome == 'success'
         run: |
           echo "✅ Code quality checks passed!"
