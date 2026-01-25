@@ -14,6 +14,10 @@ This is a SvelteKit web application for tracking recurring bills from YNAB (You 
 - **API**: YNAB REST API
 - **Deployment**: Static adapter (GitHub Pages), Auto adapter, or Netlify adapter
 
+## Tooling
+
+- Use Bun CLI exclusively for installs and scripts (`bun install`, `bun run`, `bun test`); avoid npm and npx.
+
 ## Svelte 5 & Runes Mode Requirements
 
 **This project uses Svelte 5 with Runes mode enabled.** When generating Svelte code, you **MUST** follow these guidelines:
