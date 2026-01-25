@@ -199,7 +199,7 @@
 		.create-demo-plan-button {
 			padding: 0em 0em;
 			background-color: transparent;
-			color: #007bff;
+			color: #0000FF;
 			border: none;
 			border-radius: none;
 			cursor: pointer;
