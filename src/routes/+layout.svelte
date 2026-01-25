@@ -4,11 +4,45 @@
 	import WorksWithYnab from '$lib/components/WorksWithYnab.svelte';
 	import { page } from '$app/state';
 	import { unsupportedFrequencies } from '$lib';
+	import { PUBLIC_SHOW_API_RESTRICTION_NOTICE } from '$env/static/public';
+	import { browser } from '$app/environment';
 
 	let { children } = $props();
 
 	const isDemo = $derived.by(() => {
 		return page.params.id === 'demo';
+	});
+
+	let showApiScheduledTransactionsNotice = $derived.by(() => {
+		return (
+			browser && localStorage.getItem('api_scheduled_transactions_notice_dismissed') !== 'true'
+		);
+	});
+
+	let showApiRestrictionNotice = $derived.by(() => {
+		return (
+			PUBLIC_SHOW_API_RESTRICTION_NOTICE === 'true' &&
+			browser &&
+			localStorage.getItem('api_restriction_notice_dismissed') !== 'true'
+		);
+	});
+
+	function dismissApiRestrictionNotice() {
+		if (browser) {
+			localStorage.setItem('api_restriction_notice_dismissed', 'true');
+			showApiRestrictionNotice = false;
+		}
+	}
+
+	function dismissApiScheduledTransactionsNotice() {
+		if (browser) {
+			localStorage.setItem('api_scheduled_transactions_notice_dismissed', 'true');
+			showApiScheduledTransactionsNotice = false;
+		}
+	}
+
+	const atLeastOneNoticeDismissed = $derived.by(() => {
+		return !showApiRestrictionNotice || !showApiScheduledTransactionsNotice;
 	});
 </script>
 
@@ -93,6 +127,58 @@
 			color: #856404;
 			border-radius: 4px;
 		}
+
+		.api-warning {
+			max-width: 600px;
+			padding: 1rem;
+			background-color: #fff3cd;
+			border: 1px solid #ffc107;
+			border-radius: 4px;
+			color: #856404;
+			text-align: center;
+			margin: 0 auto 1rem auto;
+		}
+
+		.api-warning strong {
+			display: block;
+			margin-bottom: 0.5rem;
+		}
+
+		.api-warning .close-button {
+			background: none;
+			border: none;
+			font-size: 1.2rem;
+			line-height: 1;
+			cursor: pointer;
+			color: black;
+			display: flex;
+			justify-self: end;
+		}
+
+		@media (prefers-color-scheme: dark) {
+			.api-warning {
+				background-color: #664d03;
+				border-color: #997404;
+				color: #ffecb5;
+			}
+		}
+
+		.reactivate-warnings {
+			display: flex;
+			flex-direction: column;
+			align-items: end;
+			padding: 0 2rem 1rem 2rem;
+			font-size: 1rem;
+			gap: 0.5rem;
+		}
+
+		.reactivate-warnings button {
+			padding: 0.5rem 1rem;
+			font-size: 1rem;
+			cursor: pointer;
+			background-color: transparent;
+			color: #007bff;
+		}
 	</style>
 </svelte:head>
 
@@ -149,16 +235,60 @@
 	>
 </div>
 
-<div class="write-access-note">
-	<div>
-		<b>Note</b>: Due to a bug with YNAB's API, bills with the following frequencies cannot be
-		created, updated, or deleted within this interface: {unsupportedFrequencies.join(', ')}.
+{#if atLeastOneNoticeDismissed}
+	<div class="reactivate-warnings">
+		<button
+			type="button"
+			onclick={() => {
+				if (browser) {
+					localStorage.removeItem('api_restriction_notice_dismissed');
+					localStorage.removeItem('api_scheduled_transactions_notice_dismissed');
+					showApiRestrictionNotice = true;
+					showApiScheduledTransactionsNotice = true;
+				}
+			}}
+			disabled={!atLeastOneNoticeDismissed}
+		>
+			Show Dismissed Warnings
+		</button>
 	</div>
-	<div style="margin-top: 0.5rem;">
-		You will have to manage these bills directly in
-		<a href="https://app.ynab.com" target="_blank" rel="noopener noreferrer">YNAB</a>
+{/if}
+
+{#if showApiRestrictionNotice}
+	<div class="api-warning">
+		<button class="close-button" aria-label="Dismiss notice" onclick={dismissApiRestrictionNotice}
+			>&times;</button
+		>
+		<strong>⚠️ API Restriction Notice</strong>
+		<p>
+			The YNAB API client for this app is currently restricted to 25 access tokens. If you encounter
+			issues logging in, please see the <a
+				href="https://github.com/danielh-official/billsforynab/blob/main/GUIDE.md#api-restriction-notice"
+				target="_blank"
+				rel="noopener noreferrer">user guide</a
+			> for instructions on setting up the app locally with your own YNAB API client.
+		</p>
 	</div>
-</div>
+{/if}
+
+{#if showApiScheduledTransactionsNotice}
+	<div class="api-warning">
+		<button
+			class="close-button"
+			aria-label="Dismiss notice"
+			onclick={dismissApiScheduledTransactionsNotice}>&times;</button
+		>
+		<strong>⚠️ API Bug Notice</strong>
+		<p>
+			Due to a bug with YNAB's API, bills with the following frequencies cannot be created, updated,
+			or deleted within this interface: {unsupportedFrequencies.join(', ')}.
+		</p>
+		<p style="margin-top: 0.5rem;">
+			You will have to manage these bills directly in
+			<a href="https://app.ynab.com" target="_blank" rel="noopener noreferrer">YNAB</a>
+		</p>
+	</div>
+{/if}
 
 <main>
 	{@render children()}
