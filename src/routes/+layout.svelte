@@ -44,8 +44,23 @@
 	const atLeastOneNoticeDismissed = $derived.by(() => {
 		return !showApiRestrictionNotice || !showApiScheduledTransactionsNotice;
 	});
+
 	// Demo mode access type (read-only or read-and-write)
 	let demoAccessType = $state<'read-only' | 'read-and-write'>('read-only');
+
+	function switchToReadonlyDemoAccessType() {
+		if (!browser) return;
+		demoAccessType = 'read-only';
+		sessionStorage.setItem('demo_access_type', demoAccessType);
+		window.dispatchEvent(new CustomEvent('demoAccessTypeChange', { detail: demoAccessType }));
+	}
+
+	function switchToReadAndWriteDemoAccessType() {
+		if (!browser) return;
+		demoAccessType = 'read-and-write';
+		sessionStorage.setItem('demo_access_type', demoAccessType);
+		window.dispatchEvent(new CustomEvent('demoAccessTypeChange', { detail: demoAccessType }));
+	}
 
 	// Load demo access type from sessionStorage on mount
 	$effect(() => {
@@ -56,16 +71,6 @@
 			demoAccessType = stored;
 		}
 	});
-
-	// Save demo access type to sessionStorage when it changes
-	function toggleDemoAccessType() {
-		demoAccessType = demoAccessType === 'read-only' ? 'read-and-write' : 'read-only';
-		if (browser) {
-			sessionStorage.setItem('demo_access_type', demoAccessType);
-			// Dispatch custom event to notify other components
-			window.dispatchEvent(new CustomEvent('demoAccessTypeChange', { detail: demoAccessType }));
-		}
-	}
 </script>
 
 <svelte:head>
@@ -264,7 +269,7 @@
 				<button
 					class="demo-toggle-button"
 					class:active={demoAccessType === 'read-only'}
-					onclick={toggleDemoAccessType}
+					onclick={switchToReadonlyDemoAccessType}
 					aria-label="Toggle to read-only access"
 				>
 					🔒 Read-Only
@@ -272,7 +277,7 @@
 				<button
 					class="demo-toggle-button"
 					class:active={demoAccessType === 'read-and-write'}
-					onclick={toggleDemoAccessType}
+					onclick={switchToReadAndWriteDemoAccessType}
 					aria-label="Toggle to read and write access"
 				>
 					✏️ Read &amp; Write
