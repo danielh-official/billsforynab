@@ -33,6 +33,7 @@ If you're unable to log in due to the API restriction, follow these steps to run
    - Click "New Application"
    - Enter a name for your application (e.g., "My Bills for YNAB")
    - In the "Redirect URI(s)" field, enter: `http://localhost:5173/callback` and `http://localhost:5173/callback/write`
+     - **Note**: If you are hosting this on a GitHub Pages site, your root url may be something like `my-username.github.io/billsforynab`. In such a case, the "Redirect URI(s)" should be `my-username.github.io/billsforynab/callback` and `my-username.github.io/billsforynab/callback/write`
    - Click "Save Application"
    - Copy the Client ID
 
@@ -58,7 +59,9 @@ If you're unable to log in due to the API restriction, follow these steps to run
 
 6. Open your browser to `http://localhost:5173` and log in with your YNAB account.
 
-For more detailed instructions, see the [README](https://github.com/danielh-official/billsforynab/blob/main/README.md#local-development).
+You can also find instructions in the [README](https://github.com/danielh-official/billsforynab/blob/main/README.md#local-development).
+
+For any issues, [write one](https://github.com/danielh-official/billsforynab/issues/new).
 
 ## Getting Plans
 
