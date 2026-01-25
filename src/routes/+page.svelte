@@ -199,7 +199,7 @@
 		.create-demo-plan-button {
 			padding: 0em 0em;
 			background-color: transparent;
-			color: #0000FF;
+			color: #0000ff;
 			border: none;
 			border-radius: none;
 			cursor: pointer;
@@ -251,6 +251,16 @@
 		@media (prefers-color-scheme: dark) {
 			.table th {
 				background-color: #444;
+			}
+
+			.create-demo-plan-button {
+				padding: 0em 0em;
+				background-color: transparent;
+				color: #90caf9;
+				border: none;
+				border-radius: none;
+				cursor: pointer;
+				font-size: 1rem;
 			}
 		}
 	</style>
