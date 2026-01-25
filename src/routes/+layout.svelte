@@ -75,7 +75,10 @@
 
 <svelte:head>
 	<title>Bills (For YNAB)</title>
-    <meta name="description" content="Manage your bills and sync them with your YNAB account. Create, view, and delete budgeting plans easily." />
+	<meta
+		name="description"
+		content="Manage your bills and sync them with your YNAB account. Create, view, and delete budgeting plans easily."
+	/>
 	<link rel="icon" href={favicon} />
 	<script async defer src="https://buttons.github.io/buttons.js"></script>
 
@@ -183,14 +186,6 @@
 			justify-self: end;
 		}
 
-		@media (prefers-color-scheme: dark) {
-			.api-warning {
-				background-color: #664d03;
-				border-color: #997404;
-				color: #ffecb5;
-			}
-		}
-
 		.reactivate-warnings {
 			display: flex;
 			flex-direction: column;
@@ -205,12 +200,12 @@
 			font-size: 1rem;
 			cursor: pointer;
 			background-color: transparent;
-			color: #0000FF;
+			color: #0000ff;
 		}
 
-        .reactivate-warnings button:hover {
-            text-decoration: underline;
-        }
+		.reactivate-warnings button:hover {
+			text-decoration: underline;
+		}
 
 		.demo-access-toggle {
 			display: flex;
@@ -257,6 +252,38 @@
 			font-size: 0.85rem;
 			margin-top: 0.5rem;
 			font-style: italic;
+		}
+
+		@media (prefers-color-scheme: dark) {
+			.api-warning {
+				background-color: #664d03;
+				border-color: #997404;
+				color: #ffecb5;
+			}
+
+			.reactivate-warnings button {
+				color: #90caf9;
+			}
+
+			.demo-banner {
+				background-color: #664d03;
+				border: 1px solid #997404;
+				color: #ffecb5;
+				padding: 1rem;
+				text-align: center;
+			}
+
+			.demo-access-toggle {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				gap: 0.75rem;
+				margin-top: 1rem;
+				padding: 0.75rem;
+				background-color: #333333;
+				border-radius: 6px;
+				border: 1px solid #997404;
+			}
 		}
 	</style>
 </svelte:head>
