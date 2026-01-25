@@ -1085,7 +1085,11 @@
 		await db.scheduled_transactions.delete(bill.id);
 		await db.scheduled_transactions.put(publishedBill);
 		setBillSyncing(bill.id, false);
-		showToast('Draft published to YNAB.', 'success');
+		if (isDemo) {
+			showToast('Draft published to YNAB (not).', 'success');
+		} else {
+			showToast('Draft published to YNAB.', 'success');
+		}
 	}
 
 	let categoryGroups = liveQuery(() => {
@@ -1570,118 +1574,121 @@
 			</p>
 		</div>
 		<!-- MARK: - Bills -->
-		<h1>Bills</h1>
-		<div class="bill-container">
-			{#each bills as bill (bill.id)}
-				{@const dueDateColors = getDueDateColors(bill.date_next)}
-				{#if billsBeingSynced.has(bill.id)}
-					<!-- loading state marker; no content change needed -->
-				{/if}
-				<div class="bill" class:excluded={bill.excluded} class:draft={!bill.published}>
-					<div class="bill-actions">
-						<!-- MARK: - Toggle Exclude/Include -->
-						<button
-							class="toggle-exclude"
-							onclick={() => toggleExcluded(bill.id, bill.excluded ?? false)}
-							data-tooltip={bill.excluded
-								? 'Excluded from calculations'
-								: 'Included in calculations'}
-							aria-label={bill.excluded
-								? `Include bill to ${bill.payee_name ?? 'unspecified payee'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`
-								: `Exclude bill to ${bill.payee_name ?? 'unspecified payee'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`}
-						>
-							{bill.excluded ? '👁️' : '✓'}
-						</button>
-						<!-- MARK: - Edit/Delete/Publish Buttons -->
-						{#if effectiveWriteAccess}
-							<button
-								class="edit-bill-button"
-								disabled={!effectiveWriteAccess || billsBeingSynced.has(bill.id)}
-								onclick={() => openBillModal(bill)}
-								data-tooltip={effectiveWriteAccess
-									? 'Edit this bill'
-									: 'You need write access to edit bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
-								aria-label={`Edit bill to ${bill.payee_name ?? 'unspecified payee'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`}
-							>
-								✏️
-							</button>
-							<button
-								class="delete-bill-button"
-								disabled={!effectiveWriteAccess ||
-									billsBeingSynced.has(bill.id) ||
-									unsupportedFrequencies.includes(bill.frequency)}
-								onclick={() => handleDeleteBill(bill)}
-								data-tooltip={effectiveWriteAccess
-									? unsupportedFrequencies.includes(bill.frequency)
-										? `Cannot delete bills with frequency: ${unsupportedFrequencies.join(', ')} due to YNAB API limitations.`
-										: 'Delete this bill'
-									: 'You need write access to delete bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
-								aria-label={`Delete bill to ${bill.payee_name ?? 'unspecified payee'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`}
-							>
-								🗑️
-							</button>
-							{#if !bill.published}
-								<button
-									class="publish-bill-button"
-									disabled={!effectiveWriteAccess || billsBeingSynced.has(bill.id)}
-									onclick={() => publishDraftBill(bill)}
-									data-tooltip={effectiveWriteAccess
-										? 'Bill is draft. Click to publish to YNAB.'
-										: 'You need write access to publish bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
-									aria-label={`Publish draft bill of ${bill.payee_name ?? 'unspecified payee'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)} to YNAB`}
-								>
-									🚀
-								</button>
-							{/if}
-						{/if}
-					</div>
-					{#if !bill.published}
-						<div class="draft-badge">DRAFT</div>
-					{/if}
+		{#if bills.length === 0}
+			<p>No bills found.</p>
+		{:else}
+			<div class="bill-container">
+				{#each bills as bill (bill.id)}
+					{@const dueDateColors = getDueDateColors(bill.date_next)}
 					{#if billsBeingSynced.has(bill.id)}
-						<div class="bill-loading">Syncing with YNAB…</div>
+						<!-- loading state marker; no content change needed -->
 					{/if}
-					<!-- MARK: - Bill Details -->
-					<ul>
-						<li class="monthly-equivalent">
-							Monthly Equivalent: {determineAmountStringFromBudgetCurrency(
-								-(bill.monthly_amount ?? bill.amount * getFrequencyMultiplier(bill.frequency))
-							)}
-						</li>
-						<li>
-							<strong>
-								Due: <span
-									class="due-date-badge"
-									style="background-color: {dueDateColors.backgroundColor}; color: {dueDateColors.textColor};"
+					<div class="bill" class:excluded={bill.excluded} class:draft={!bill.published}>
+						<div class="bill-actions">
+							<!-- MARK: - Toggle Exclude/Include -->
+							<button
+								class="toggle-exclude"
+								onclick={() => toggleExcluded(bill.id, bill.excluded ?? false)}
+								data-tooltip={bill.excluded
+									? 'Excluded from calculations'
+									: 'Included in calculations'}
+								aria-label={bill.excluded
+									? `Include bill to ${bill.payee_name ?? 'unspecified payee'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`
+									: `Exclude bill to ${bill.payee_name ?? 'unspecified payee'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`}
+							>
+								{bill.excluded ? '👁️' : '✓'}
+							</button>
+							<!-- MARK: - Edit/Delete/Publish Buttons -->
+							{#if effectiveWriteAccess}
+								<button
+									class="edit-bill-button"
+									disabled={!effectiveWriteAccess || billsBeingSynced.has(bill.id)}
+									onclick={() => openBillModal(bill)}
+									data-tooltip={effectiveWriteAccess
+										? 'Edit this bill'
+										: 'You need write access to edit bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
+									aria-label={`Edit bill to ${bill.payee_name ?? 'unspecified payee'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`}
 								>
-									{convertToReadableDate(bill.date_next)} ({getRelativeDate(bill.date_next)})
-								</span>
-							</strong>
-						</li>
-					</ul>
-					<p>
-						{determineAmountStringFromBudgetCurrency(-bill.amount)} ({parseFrequencyText(
-							bill.frequency
-						)}) to
-						<strong>{bill.payee_name ?? 'unspecified payee'}</strong>
-					</p>
-					<ul>
-						<li>
-							Category: {bill.category_name}
-							{#if getCategory(bill.category_id)}
-								({getCategory(bill.category_id)?.category_group_name})
+									✏️
+								</button>
+								<button
+									class="delete-bill-button"
+									disabled={!effectiveWriteAccess ||
+										billsBeingSynced.has(bill.id) ||
+										unsupportedFrequencies.includes(bill.frequency)}
+									onclick={() => handleDeleteBill(bill)}
+									data-tooltip={effectiveWriteAccess
+										? unsupportedFrequencies.includes(bill.frequency)
+											? `Cannot delete bills with frequency: ${unsupportedFrequencies.join(', ')} due to YNAB API limitations.`
+											: 'Delete this bill'
+										: 'You need write access to delete bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
+									aria-label={`Delete bill to ${bill.payee_name ?? 'unspecified payee'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`}
+								>
+									🗑️
+								</button>
+								{#if !bill.published}
+									<button
+										class="publish-bill-button"
+										disabled={!effectiveWriteAccess || billsBeingSynced.has(bill.id)}
+										onclick={() => publishDraftBill(bill)}
+										data-tooltip={effectiveWriteAccess
+											? 'Bill is draft. Click to publish to YNAB.'
+											: 'You need write access to publish bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
+										aria-label={`Publish draft bill of ${bill.payee_name ?? 'unspecified payee'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)} to YNAB`}
+									>
+										🚀
+									</button>
+								{/if}
 							{/if}
-						</li>
-						<li style="margin-top: 0.5em;">Account: {bill.account_name}</li>
-						<li style="margin-top: 0.5em;">
-							<em>
-								First Paid On: {convertToReadableDate(bill.date_first)}
-							</em>
-						</li>
-					</ul>
-					<p>{bill.memo}</p>
-				</div>
-			{/each}
-		</div>
+						</div>
+						{#if !bill.published}
+							<div class="draft-badge">DRAFT</div>
+						{/if}
+						{#if billsBeingSynced.has(bill.id)}
+							<div class="bill-loading">Syncing with YNAB…</div>
+						{/if}
+						<!-- MARK: - Bill Details -->
+						<ul>
+							<li class="monthly-equivalent">
+								Monthly Equivalent: {determineAmountStringFromBudgetCurrency(
+									-(bill.monthly_amount ?? bill.amount * getFrequencyMultiplier(bill.frequency))
+								)}
+							</li>
+							<li>
+								<strong>
+									Due: <span
+										class="due-date-badge"
+										style="background-color: {dueDateColors.backgroundColor}; color: {dueDateColors.textColor};"
+									>
+										{convertToReadableDate(bill.date_next)} ({getRelativeDate(bill.date_next)})
+									</span>
+								</strong>
+							</li>
+						</ul>
+						<p>
+							{determineAmountStringFromBudgetCurrency(-bill.amount)} ({parseFrequencyText(
+								bill.frequency
+							)}) to
+							<strong>{bill.payee_name ?? 'unspecified payee'}</strong>
+						</p>
+						<ul>
+							<li>
+								Category: {bill.category_name}
+								{#if getCategory(bill.category_id)}
+									({getCategory(bill.category_id)?.category_group_name})
+								{/if}
+							</li>
+							<li style="margin-top: 0.5em;">Account: {bill.account_name}</li>
+							<li style="margin-top: 0.5em;">
+								<em>
+									First Paid On: {convertToReadableDate(bill.date_first)}
+								</em>
+							</li>
+						</ul>
+						<p>{bill.memo}</p>
+					</div>
+				{/each}
+			</div>
+		{/if}
 	{/if}
 </main>
