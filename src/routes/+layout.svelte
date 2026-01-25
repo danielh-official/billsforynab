@@ -75,6 +75,7 @@
 
 <svelte:head>
 	<title>Bills (For YNAB)</title>
+    <meta name="description" content="Manage your bills and sync them with your YNAB account. Create, view, and delete budgeting plans easily." />
 	<link rel="icon" href={favicon} />
 	<script async defer src="https://buttons.github.io/buttons.js"></script>
 

@@ -295,16 +295,16 @@
 	</button>
 	{#if !demoBudgetAlreadyExists}
 		<div>
-			On the fence? Click <button
+			On the fence? <button
 				type="button"
 				onclick={createDemoPlan}
 				class="create-demo-plan-button"
-				disabled={demoBudgetAlreadyExists}>here</button
-			> to create a demo plan and try the tutorial. No YNAB account required!
+				disabled={demoBudgetAlreadyExists}>Create a demo plan.</button
+			> No YNAB account required!
 		</div>
 	{:else}
 		<div>
-			You already have a demo plan. Click <a href={resolve('/plan/demo')}>here</a> to view it.
+			You already have a <a href={resolve('/plan/demo')}>demo plan</a>.
 		</div>
 	{/if}
 	{#if $budgets}
@@ -338,11 +338,11 @@
 			fetched directly from YNAB using your API token and is not stored on our servers.
 		</div>
 		<div>
-			Also, this app is open-source. Click <a
+			Also, this app is open-source. <a
 				href="https://github.com/danielh-official/billsforynab"
 				target="_blank"
-				rel="noopener noreferrer">here</a
-			> to view the source code.
+				rel="noopener noreferrer">View the source code.</a
+			>
 		</div>
 	</div>
 </div>
