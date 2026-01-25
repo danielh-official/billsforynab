@@ -200,9 +200,9 @@
 			cursor: pointer;
 			background-color: transparent;
 			color: #007bff;
-        }
-		
-        .demo-access-toggle {
+		}
+
+		.demo-access-toggle {
 			display: flex;
 			align-items: center;
 			justify-content: center;
