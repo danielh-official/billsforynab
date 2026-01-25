@@ -205,8 +205,12 @@
 			font-size: 1rem;
 			cursor: pointer;
 			background-color: transparent;
-			color: #007bff;
+			color: #0000FF;
 		}
+
+        .reactivate-warnings button:hover {
+            text-decoration: underline;
+        }
 
 		.demo-access-toggle {
 			display: flex;
