@@ -335,7 +335,7 @@
 		<a
 			href="https://ynab.com/referral/?ref=5uhATdvN0mdkvJzq&sponsor_name=DanielH&utm_source=customer_referral"
 			target="_blank"
-			rel="noopener noreferrer"
+			rel="noopener sponsored"
 		>
 			Referral Link
 		</a>
