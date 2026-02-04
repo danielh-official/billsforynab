@@ -1232,6 +1232,7 @@
 			z-index: 100;
 			border-bottom: 2px solid #e0e0e0;
 			margin-bottom: 16px;
+			width: 100%;
 		}
 		.monthly-equivalent {
 			margin-bottom: 10px;
