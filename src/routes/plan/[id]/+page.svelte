@@ -1336,6 +1336,10 @@
 		}
 
 		@media (prefers-color-scheme: dark) {
+			.stats {
+				background: #2f2f2f;
+				border-bottom-color: #444;
+			}
 			.bill {
 				border-color: #444;
 			}
