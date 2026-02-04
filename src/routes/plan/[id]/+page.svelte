@@ -1225,6 +1225,13 @@
 		.stats {
 			display: flex;
 			gap: 16px;
+			position: sticky;
+			top: 0;
+			background: white;
+			padding: 12px 0;
+			z-index: 100;
+			border-bottom: 2px solid #e0e0e0;
+			margin-bottom: 16px;
 		}
 		.monthly-equivalent {
 			margin-bottom: 10px;
