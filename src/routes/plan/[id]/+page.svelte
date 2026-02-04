@@ -1335,9 +1335,9 @@
 				width: 100%;
 			}
 
-            .stats {
-                display: block;
-            }
+			.stats {
+				display: block;
+			}
 		}
 
 		@media (prefers-color-scheme: dark) {
@@ -1588,9 +1588,9 @@
 					{formatLastFetched($currentBudget?.last_fetched)}
 				</strong>
 			</p>
-            <p>
-                Total Excluded: <strong>{bills.filter(bill => bill.excluded).length}</strong>
-            </p>
+			<p>
+				Total Excluded: <strong>{bills.filter((bill) => bill.excluded).length}</strong>
+			</p>
 		</div>
 		<!-- MARK: - Bills -->
 		{#if bills.length === 0}
