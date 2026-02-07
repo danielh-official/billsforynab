@@ -30,7 +30,7 @@ You have the option to log into YNAB with either "Read-Only" or "Read/Write" acc
 
 Use the "Read-Only" access whenever possible to minimize the risk of unintended changes to your YNAB account.
 
-If you want to create, update, or delete a bill in "billsforynab" and send the changes to YNAB, use "Read/Write" access.
+If you want to create, update, or delete a bill in "Bills (For YNAB)" and send the changes to YNAB, use "Read/Write" access.
 
 ## Data Deletion
 
