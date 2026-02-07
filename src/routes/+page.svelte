@@ -132,6 +132,19 @@
 				.catch((error) => {
 					console.error('Failed to delete scheduled transactions for budget:', error);
 				});
+
+            // Find all category groups associated with this budget and delete them
+            db.category_groups
+				.where('budget_id')
+				.equals(id)
+				.toArray()
+				.then((groups) => {
+					const deletePromises = groups.map((group) => db.category_groups.delete(group.id));
+					return Promise.all(deletePromises);
+				})
+				.catch((error) => {
+					console.error('Failed to delete category groups for budget:', error);
+				});
 		}
 	}
 
