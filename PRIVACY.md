@@ -1,6 +1,6 @@
 # Privacy
 
-**Last Updated: January 19, 2025**
+**Last Updated: February 7, 2026**
 
 Thank you for choosing Bills (For YNAB) (referred to as “we,” “our,” or “us”). We are committed to protecting your privacy and handling your data with the utmost care. This privacy policy outlines how we handle, store, and secure the data obtained through the YNAB API to ensure your confidence and peace of mind while using our services.
 
@@ -14,9 +14,51 @@ Most data retrieved from YNAB is stored in the `BillsForYnabDB` IndexedDB on you
 
 Furthermore, the authorization method (Implicit Grant Flow) for your access token ensures it expires 2 hours after receipt.
 
-## Confidentially
+Your IndexedDB data will be stored for as long as you use the application or until you delete it. Session storage data will be cleared whenever you close your browser.
+
+Your data is secured using the encryption and isolation standards of the browser you access the app from.
+
+## Consent
+
+The current data being fetched from YNAB is your scheduled transactions. By using the app, you consent to the retrieval and use of this data for the purpose of providing our services.
+
+If there is any change in the type of data being accessed or how we use your data, we will notify you and obtain your consent before proceeding.
+
+## Read-Only vs. Read/Write Access
+
+You have the option to log into YNAB with either "Read-Only" or "Read/Write" access. "Read-Only" access allows the app to view your data without making any changes, while "Read/Write" access allows the app to make changes to your YNAB account.
+
+Use the "Read-Only" access whenever possible to minimize the risk of unintended changes to your YNAB account.
+
+If you want to create, update, or delete a bill in "billsforynab" and send the changes to YNAB, use "Read/Write" access.
+
+## Data Deletion
+
+You may delete all your data stored in the `BillsForYnabDB` IndexedDB at any time. This action will remove all your financial data from the application.
+
+Because your data is stored locally instead of in a server, we cannot delete it for you.
+
+You may delete the data using the methods below.
+
+### Via the Application
+
+Go to the home page and click "Delete" next to the plan you want to delete. This will delete all data tied to the plan.
+
+### Via Developer Tools (Chrome) - Deleting All Data
+
+1. Right-click > Inspect
+2. Find the "Application" tab
+3. Find "IndexedDB" under "Storage"
+4. Expand "IndexedDB" and select "BillsForYnabDB"
+5. Click on the database and then click "Delete Database"
+
+## Confidentiality
 
 Due to the local nature of storage and your ability to self-host, we are unable to access your data without having access to your computer.
+
+If you choose to share your data with us for any reason, we will handle it with the utmost care and confidentiality. At no point will we sell, trade, or otherwise transfer your personally identifiable information to outside parties without your consent.
+
+Data obtained through the YNAB API will not unknowingly be passed to any third party.
 
 ## Changes to this Privacy Policy
 
