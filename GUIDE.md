@@ -6,11 +6,6 @@ Welcome to Bills (For YNAB)!
 
 This app helps you track and visualize your recurring bills from YNAB.
 
-## API Restriction Notice
-
-> [!WARNING]
-> The YNAB API client for this app is currently restricted to 25 access tokens. If you encounter issues logging in, you can set up the app locally with your own YNAB API client.
-
 ### Setting Up Your Own Instance
 
 If you're unable to log in due to the API restriction, follow these steps to run the app locally:

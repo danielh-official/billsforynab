@@ -386,23 +386,6 @@
 	</div>
 {/if}
 
-{#if showApiRestrictionNotice}
-	<div class="api-warning">
-		<button class="close-button" aria-label="Dismiss notice" onclick={dismissApiRestrictionNotice}
-			>&times;</button
-		>
-		<strong>⚠️ API Restriction Notice</strong>
-		<p>
-			The YNAB API client for this app is currently restricted to 25 access tokens. If you encounter
-			issues logging in, please see the <a
-				href="https://github.com/danielh-official/billsforynab/blob/main/GUIDE.md#api-restriction-notice"
-				target="_blank"
-				rel="noopener noreferrer">user guide</a
-			> for instructions on setting up the app locally with your own YNAB API client.
-		</p>
-	</div>
-{/if}
-
 {#if showApiScheduledTransactionsNotice}
 	<div class="api-warning">
 		<button
