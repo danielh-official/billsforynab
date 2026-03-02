@@ -1,127 +1,25 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/forms';
+@plugin '@tailwindcss/typography';
+
 body {
 	font-family:
-		Gordita, Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+		ui-sans-serif,
+		system-ui,
+		-apple-system,
+		BlinkMacSystemFont,
+		'Segoe UI',
+		Roboto,
+		'Helvetica Neue',
+		Arial,
+		sans-serif;
 	min-height: 100vh;
-}
-
-main {
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	align-items: center;
-}
-
-footer {
-	margin-top: 20rem;
-	font-size: 0.875rem;
-	color: #666;
-	text-align: center;
-	padding: 1em;
-	max-width: 50rem;
-	margin-left: auto;
-	margin-right: auto;
-}
-
-a {
-	color: #0000ff;
-	text-decoration: none;
-}
-
-a:hover {
-	text-decoration: underline;
-	color: black;
-}
-
-main {
-	text-align: center;
-	padding: 1em;
-	margin: 0 auto;
-}
-
-h1 {
-	color: #335d92;
-	text-transform: uppercase;
-	font-size: 4rem;
-	font-weight: 100;
-	line-height: 1.1;
-	margin: 4rem auto;
-	max-width: 14rem;
-}
-
-p {
-	max-width: 14rem;
-	margin: 2rem auto;
-	line-height: 1.35;
-}
-
-@media (min-width: 480px) {
-	h1 {
-		max-width: none;
-	}
-
-	p {
-		max-width: none;
-	}
+	@apply bg-stone-50 text-stone-800 antialiased dark:bg-stone-950 dark:text-stone-200;
 }
 
 table {
 	width: 100%;
 	border-collapse: collapse;
-}
-
-button {
-	padding: 0.5em 1em;
-	background-color: #335d92;
-	color: white;
-	border: none;
-	border-radius: 4px;
-	cursor: pointer;
-}
-
-button:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
-/* Change the colors based on system theme */
-
-@media (prefers-color-scheme: dark) {
-	body {
-		background-color: #2f2f2f;
-		color: #e0e0e0;
-	}
-
-	h1 {
-		color: #90caf9;
-	}
-
-	button {
-		background-color: #90caf9;
-		color: #121212;
-	}
-
-	a {
-		color: #90caf9;
-	}
-
-	a:hover {
-		text-decoration: underline;
-		color: white;
-	}
-
-	input {
-		background-color: #444;
-		color: #e0e0e0;
-	}
-
-	select {
-		background-color: #444;
-		color: #e0e0e0;
-	}
-
-	input[type='date']::-webkit-calendar-picker-indicator {
-		background-color: #90caf9;
-	}
 }
 
 [data-tooltip] {
@@ -145,7 +43,6 @@ button:disabled {
 	left: 50%;
 	margin-bottom: 5px;
 	padding: 7px;
-	width: 100%;
 	min-width: 70px;
 	max-width: 250px;
 	-webkit-border-radius: 3px;
@@ -191,4 +88,13 @@ ul {
 	list-style: none;
 	padding: 0;
 	margin: 0.5rem 0 0 1rem;
+}
+
+p {
+	margin-bottom: 1rem;
+}
+
+button,
+a {
+	@apply cursor-pointer;
 }

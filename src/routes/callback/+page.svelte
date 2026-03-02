@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	// import { PUBLIC_BASE_PATH } from '$env/static/public';
 	import { resolve } from '$app/paths';
 
 	$effect(() => {
@@ -12,7 +11,6 @@
 		if (accessToken) {
 			sessionStorage.setItem('ynab_access_token', accessToken);
 			sessionStorage.setItem('ynab_token_write', 'false');
-			// const path = PUBLIC_BASE_PATH || '/';
 			goto(resolve('/'));
 		}
 	});

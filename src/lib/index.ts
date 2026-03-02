@@ -7,6 +7,7 @@ import type {
 } from 'ynab/dist/models';
 import {
 	db,
+	type CustomBudgetDetail,
 	type CustomCategoryGroupWithCategories,
 	type CustomScheduledTransactionDetail
 } from '$lib/db';
@@ -637,4 +638,51 @@ export async function createFakeDataForDemo() {
 		],
 		last_fetched: new Date()
 	});
+}
+
+export function determineAmountStringFromBudgetCurrency(
+	amount: number,
+	currentBudget: CustomBudgetDetail | undefined
+): string | undefined {
+	if (!currentBudget) {
+		return undefined;
+	}
+
+	const budgetCurrency = currentBudget?.currency_format?.iso_code || 'USD';
+	const formatter = new Intl.NumberFormat(undefined, {
+		style: 'currency',
+		currency: budgetCurrency
+	});
+	return formatter.format(amount / 1000);
+}
+
+export function getFrequencyMultiplier(frequency: ScheduledTransactionFrequency) {
+	switch (frequency) {
+		case 'never':
+			return 0;
+		case 'daily':
+			return 30; // Approximate
+		case 'weekly':
+			return 4; // Approximate
+		case 'everyOtherWeek':
+			return 2; // Approximate
+		case 'twiceAMonth':
+			return 2;
+		case 'monthly':
+			return 1;
+		case 'everyOtherMonth':
+			return 0.5;
+		case 'every3Months':
+			return 1 / 3;
+		case 'every4Months':
+			return 0.25;
+		case 'twiceAYear':
+			return 2 / 12;
+		case 'yearly':
+			return 1 / 12;
+		case 'everyOtherYear':
+			return 0.5 / 12;
+		default:
+			return 0;
+	}
 }

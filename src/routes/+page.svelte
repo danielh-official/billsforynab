@@ -1,44 +1,9 @@
 <script lang="ts">
-	import { db, type CustomBudgetDetail } from '$lib/db';
+	import { db } from '$lib/db';
 	import { liveQuery } from 'dexie';
-	import { page } from '$app/state';
 	import type { BudgetDetail, BudgetSummaryResponse } from 'ynab/dist/models';
 	import { browser } from '$app/environment';
-	import { PUBLIC_BASE_PATH, PUBLIC_YNAB_CLIENT_ID } from '$env/static/public';
 	import { resolve } from '$app/paths';
-
-	let currentUrl = $derived.by(() => {
-		if (browser) {
-			return page.url.origin + PUBLIC_BASE_PATH;
-		}
-		return '';
-	});
-
-	let readonlyAuthUrl = $derived.by(() => {
-		// The default client ID only works with production url.
-		// Set the PUBLIC_YNAB_CLIENT_ID to a client that works with your dev URL.
-		const clientId =
-			PUBLIC_YNAB_CLIENT_ID.trim().length > 0
-				? PUBLIC_YNAB_CLIENT_ID
-				: 'pSUArM_scyhWolG84x64phZCixdv4rDXkyr3JpzoN34';
-
-		const redirectUri = `${currentUrl}/callback`;
-
-		return `https://app.ynab.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=read-only`;
-	});
-
-	let writeAllowedAuthUrl = $derived.by(() => {
-		// The default client ID only works with production url.
-		// Set the PUBLIC_YNAB_CLIENT_ID to a client that works with your dev URL.
-		const clientId =
-			PUBLIC_YNAB_CLIENT_ID.trim().length > 0
-				? PUBLIC_YNAB_CLIENT_ID
-				: 'pSUArM_scyhWolG84x64phZCixdv4rDXkyr3JpzoN34';
-
-		const redirectUri = `${currentUrl}/callback/write`;
-
-		return `https://app.ynab.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token`;
-	});
 
 	let authToken = $derived.by(() => {
 		if (browser) {
@@ -55,7 +20,7 @@
 
 	async function fetchBudgets() {
 		if (!authToken) {
-			console.error('No access token found.');
+			alert('No access token found. Please login again.');
 			return;
 		}
 
@@ -68,13 +33,13 @@
 		});
 
 		if (budgetsResponse.status === 401) {
-			console.warn('Unauthorized. Clearing access token.');
+			alert('Unauthorized. Please login again.');
 			sessionStorage.removeItem('ynab_access_token');
 			return;
 		}
 
 		if (!budgetsResponse.ok) {
-			console.error('Failed to fetch budgets:', budgetsResponse.statusText);
+			alert(`Failed to fetch budgets: ${budgetsResponse.statusText}`);
 			return;
 		}
 
@@ -96,26 +61,6 @@
 
 	const budgets = liveQuery(() => db.budgets.orderBy('id').toArray());
 
-	function createDemoPlan() {
-		const demoBudget: CustomBudgetDetail = {
-			id: 'demo',
-			name: 'Demo',
-			last_modified_on: new Date().toISOString(),
-			first_month: new Date().toISOString().substring(0, 7),
-			last_month: new Date().toISOString().substring(0, 7),
-			is_default: false
-		};
-
-		db.budgets.put(demoBudget);
-	}
-
-	let demoBudgetAlreadyExists = $derived.by(() => {
-		if ($budgets) {
-			return $budgets.some((b) => b.id === 'demo');
-		}
-		return false;
-	});
-
 	function deleteBudget(id: string) {
 		if (confirm('Are you sure you want to delete this plan? This action cannot be undone.')) {
 			db.budgets.delete(id);
@@ -133,8 +78,8 @@
 					console.error('Failed to delete scheduled transactions for budget:', error);
 				});
 
-            // Find all category groups associated with this budget and delete them
-            db.category_groups
+			// Find all category groups associated with this budget and delete them
+			db.category_groups
 				.where('budget_id')
 				.equals(id)
 				.toArray()
@@ -147,225 +92,65 @@
 				});
 		}
 	}
-
-	const accessType = $derived.by(() => {
-		// Get ynab_token_write value from session storage
-		if (browser) {
-			const writeToken = sessionStorage.getItem('ynab_token_write');
-			if (writeToken === 'true') {
-				return 'read and write access';
-			} else {
-				return 'read-only access';
-			}
-		}
-		return 'Unknown';
-	});
 </script>
 
 <svelte:head>
 	<title>Home | Bills (For YNAB)</title>
-	<style>
-		.container {
-			gap: 4rem;
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			justify-content: center;
-			padding: 2rem;
-		}
-		.table {
-			border-collapse: collapse;
-			width: 100%;
-			max-width: 600px;
-		}
-		.table th,
-		.table td {
-			border: 1px solid #ddd;
-			padding: 8px;
-			text-align: center;
-		}
-		.table th {
-			background-color: #f2f2f2;
-		}
-
-		.disclaimer {
-			max-width: 600px;
-			text-align: center;
-			font-size: 0.9rem;
-			color: #666;
-			display: flex;
-			flex-direction: column;
-			gap: 0.5rem;
-		}
-
-		.fetch-budgets-button {
-			padding: 0.5rem 1rem;
-			font-size: 1rem;
-			cursor: pointer;
-		}
-
-		.fetch-budgets-button:disabled {
-			opacity: 0.5;
-			cursor: not-allowed;
-		}
-
-		.create-demo-plan-button {
-			padding: 0em 0em;
-			background-color: transparent;
-			color: #0000ff;
-			border: none;
-			border-radius: none;
-			cursor: pointer;
-			font-size: 1rem;
-		}
-
-		.create-demo-plan-button:hover {
-			text-decoration: underline;
-		}
-
-		.create-demo-plan-button:disabled {
-			opacity: 0.5;
-			cursor: not-allowed;
-			text-decoration: none;
-			color: gray;
-		}
-
-		.row-actions {
-			display: flex;
-			gap: 0.5rem;
-			justify-content: center;
-		}
-
-		.delete-budget-button {
-			padding: 0rem 0rem;
-			font-size: 1rem;
-			cursor: pointer;
-			background-color: transparent;
-			color: #ff4d4f;
-			border: none;
-		}
-
-		.delete-budget-button:hover {
-			text-decoration: underline;
-		}
-
-		.login-options {
-			display: flex;
-			flex-direction: column;
-			gap: 1rem;
-		}
-
-		.logged-in-message {
-			text-align: center;
-			display: flex;
-			flex-direction: column;
-		}
-
-		@media (prefers-color-scheme: dark) {
-			.table th {
-				background-color: #444;
-			}
-
-			.create-demo-plan-button {
-				padding: 0em 0em;
-				background-color: transparent;
-				color: #90caf9;
-				border: none;
-				border-radius: none;
-				cursor: pointer;
-				font-size: 1rem;
-			}
-		}
-	</style>
 </svelte:head>
 
-<div class="container">
-	{#if authToken}
-		<div class="logged-in-message">
-			<p>Access token found. You are logged in with {accessType}.</p>
-			<button
-				type="button"
-				onclick={() => {
-					sessionStorage.removeItem('ynab_access_token');
-					sessionStorage.removeItem('ynab_token_write');
-					location.reload();
-				}}>Logout?</button
-			>
-		</div>
-	{:else}
-		<div class="login-options">
-			<a
-				data-sveltekit-reload
-				href={readonlyAuthUrl}
-				data-tooltip="Use this option if you just want to import your YNAB data. This is the recommended option for most users."
-				>Login With YNAB (Read-Only)</a
-			>
-			<a
-				data-sveltekit-reload
-				href={writeAllowedAuthUrl}
-				data-tooltip="Use this option if you want to create/update/delete bills from here and sync the changes to your YNAB account."
-				>Login With YNAB (Read and Write)</a
-			>
-		</div>
-	{/if}
+<div class="mx-auto flex w-full max-w-xl flex-col items-center gap-10">
 	<button
-		class="fetch-budgets-button"
 		type="button"
+		class="rounded-lg border border-stone-200 bg-stone-50 px-4 py-2 text-sm text-stone-500 hover:text-stone-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-stone-700 dark:bg-stone-800/30 dark:text-stone-400 dark:hover:bg-stone-800/50 dark:hover:text-stone-200"
 		onclick={fetchBudgets}
 		disabled={fetchingBudgets || !authToken}
 	>
-		{fetchingBudgets ? 'Fetching...' : 'Fetch Plans'}
+		{fetchingBudgets ? 'Fetching…' : 'Fetch plans'}
 	</button>
-	{#if !demoBudgetAlreadyExists}
-		<div>
-			On the fence? <button
-				type="button"
-				onclick={createDemoPlan}
-				class="create-demo-plan-button"
-				disabled={demoBudgetAlreadyExists}>Create a demo plan.</button
-			> No YNAB account required!
-		</div>
-	{:else}
-		<div>
-			You already have a <a href={resolve('/plan/demo')}>demo plan</a>.
-		</div>
-	{/if}
-	{#if $budgets}
-		<table class="table">
-			<thead>
-				<tr>
-					<th>Plan Name</th>
-					<th>Default</th>
-					<th>Actions</th>
-				</tr>
-			</thead>
-			<tbody>
+
+	<section class="w-full text-left">
+		<h2 class="mb-3 text-sm font-medium text-stone-800 dark:text-stone-200">Your plans</h2>
+		{#if $budgets && $budgets.length > 0}
+			<ul
+				class="divide-y divide-stone-200 overflow-hidden rounded-lg border border-stone-200 dark:divide-stone-700 dark:border-stone-700"
+			>
 				{#each $budgets as budget (budget.id)}
-					<tr>
-						<td>{budget.name}</td>
-						<td>{budget.is_default ? 'Yes' : 'No'}</td>
-						<td class="row-actions">
-							<a href={resolve(`/plan/${budget.id}`)}>View</a>
-							<button class="delete-budget-button" onclick={() => deleteBudget(budget.id)}>
+					<li
+						class="flex items-center justify-between gap-4 bg-white px-4 py-3 transition-colors hover:bg-stone-50 dark:bg-stone-800/30 dark:hover:bg-stone-800/50"
+					>
+						<div class="min-w-0">
+							<a
+								href={resolve(`/plan/${budget.id}`)}
+								class="block truncate font-medium text-stone-800 hover:underline dark:text-stone-200"
+							>
+								{budget.name}
+							</a>
+							{#if budget.is_default}
+								<span class="text-xs text-stone-500 dark:text-stone-400">Default</span>
+							{/if}
+						</div>
+						<div class="flex shrink-0 gap-3 text-sm">
+							<a
+								href={resolve(`/plan/${budget.id}`)}
+								class="text-stone-600 hover:underline dark:text-stone-400">View</a
+							>
+							<button
+								type="button"
+								class="cursor-pointer text-stone-500 hover:text-red-600 hover:underline dark:text-stone-400 dark:hover:text-red-400"
+								onclick={() => deleteBudget(budget.id)}
+							>
 								Delete
 							</button>
-						</td>
-					</tr>
+						</div>
+					</li>
 				{/each}
-			</tbody>
-		</table>
-	{/if}
-	<div class="disclaimer">
-		<div>
-			<strong>Disclaimer</strong>: This app stores your data locally in your browser. Data is
-			fetched directly from YNAB using your API token and is not stored on our servers.
-		</div>
-		<div>
-			Also, this app is open-source. <a
-				href="https://github.com/danielh-official/billsforynab"
-				target="_blank"
-				rel="noopener noreferrer">View the source code.</a
-			>
-		</div>
-	</div>
+			</ul>
+		{:else}
+			<p class="py-6 text-sm text-stone-500 dark:text-stone-400">No plans found.</p>
+		{/if}
+	</section>
+
+	<p class="max-w-sm text-center text-xs text-stone-400 dark:text-stone-500">
+		Data is stored locally in your browser and is not sent to our servers.
+	</p>
 </div>

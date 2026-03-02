@@ -2,34 +2,21 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { liveQuery } from 'dexie';
-	import {
-		ScheduledTransactionFrequency,
-		type ScheduledTransactionDetail,
-		type Account,
-		type PutScheduledTransactionWrapper,
-		type PostScheduledTransactionWrapper,
-		AccountType,
-		type ScheduledTransactionsResponse,
-		type CategoriesResponse,
-		type Category
-	} from 'ynab/dist/models';
+	import { type Category } from 'ynab/dist/models';
 	import { db } from '$lib/db';
 	import { resolve } from '$app/paths';
-	import type {
-		CustomCategoryGroupWithCategories,
-		CustomScheduledTransactionDetail
-	} from '$lib/db';
-	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
-	import Toast from '$lib/components/Toast.svelte';
-	import {
-		createBillInYNAB,
-		createFakeDataForDemo,
-		deleteBillInYNAB,
-		supportedFrequencies,
-		unsupportedFrequencies,
-		updateBillInYNAB
-	} from '$lib';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { browser } from '$app/environment';
+	import FetchDataButton from '$lib/components/FetchDataButton.svelte';
+	import ResetDataButton from '$lib/components/ResetDataButton.svelte';
+	import DeleteBillButton from '$lib/components/DeleteBillButton.svelte';
+	import PublishDraftBillButton from '$lib/components/PublishDraftBillButton.svelte';
+	import ToggleBillInclusionButton from '$lib/components/ToggleBillInclusionButton.svelte';
+	import BillDueDate from '$lib/components/BillDueDate.svelte';
+	import LastFetchedDate from '$lib/components/LastFetchedDate.svelte';
+	import ParsedFrequency from '$lib/components/ParsedFrequency.svelte';
+	import FirstPaidDate from '$lib/components/FirstPaidDate.svelte';
+	import { determineAmountStringFromBudgetCurrency, getFrequencyMultiplier } from '$lib';
 
 	// MARK: - Mount and budgetId extraction
 
@@ -104,309 +91,10 @@
 		);
 	});
 
-	let groupedByTypeAvailableAccounts = $derived.by(() => {
-		const typesSet = new SvelteSet<AccountType>();
-		availableAccounts.forEach((account) => {
-			if (account.type) {
-				typesSet.add(account.type);
-			}
-		});
-		return Array.from(typesSet).sort((a, b) => a.localeCompare(b));
-	});
-
-	function parseAccountType(accountType: AccountType) {
-		switch (accountType) {
-			case 'checking':
-				return 'Checking';
-			case 'savings':
-				return 'Savings';
-			case 'cash':
-				return 'Cash';
-			case 'creditCard':
-				return 'Credit Card';
-			case 'lineOfCredit':
-				return 'Line of Credit';
-			case 'otherAsset':
-				return 'Other Asset';
-			case 'otherLiability':
-				return 'Other Liability';
-			case 'mortgage':
-				return 'Mortgage';
-			case 'autoLoan':
-				return 'Auto Loan';
-			case 'studentLoan':
-				return 'Student Loan';
-			case 'personalLoan':
-				return 'Personal Loan';
-			case 'medicalDebt':
-				return 'Medical Debt';
-			case 'otherDebt':
-				return 'Other Debt';
-			default:
-				return 'Other';
-		}
-	}
-
-	// MARK: - Fetching scheduled transactions for budget
-
-	let fetchingData = $state(false);
-	let toastVisible = $state(false);
-	let toastMessage = $state('');
-	let toastType: 'success' | 'error' | 'info' = $state('info');
-
-	// MARK: - Bill creation/editing modal state
-
-	let showBillModal = $state(false);
-	let editingBillId = $state<string | null>(null);
-	let billFormData = $state({
-		payee_name: '',
-		account_id: '',
-		date: '',
-		amount: 0,
-		memo: '',
-		frequency: 'monthly' as ScheduledTransactionFrequency,
-		published: false,
-		category_id: ''
-	});
-
-	function openBillModal(bill?: CustomScheduledTransactionDetail) {
-		if (bill) {
-			// Pre-fill modal with existing bill data for editing
-			editingBillId = bill.id;
-			billFormData = {
-				payee_name: bill.payee_name || '',
-				account_id: bill.account_id,
-				date: bill.date_next.split('T')[0],
-				amount: Math.abs(bill.amount) / 1000,
-				memo: bill.memo || '',
-				frequency: bill.frequency as ScheduledTransactionFrequency,
-				published: bill.published ?? false,
-				category_id: bill.category_id || ''
-			};
-		} else {
-			// Reset for new bill creation
-			editingBillId = null;
-			billFormData = {
-				payee_name: '',
-				account_id: '',
-				date: new Date().toISOString().split('T')[0],
-				amount: 0,
-				memo: '',
-				frequency: 'monthly',
-				published: false,
-				category_id: ''
-			};
-		}
-		showBillModal = true;
-	}
-
-	function closeBillModal() {
-		showBillModal = false;
-		editingBillId = null;
-		billFormData = {
-			payee_name: '',
-			account_id: '',
-			date: '',
-			amount: 0,
-			memo: '',
-			frequency: 'monthly',
-			published: false,
-			category_id: ''
-		};
-	}
-
-	// MARK: - Fetch data for budget
-
-	async function fetchData() {
-		fetchingData = true;
-
-		if (!budgetId) {
-			console.error('Budget ID is missing.');
-			fetchingData = false;
-			return;
-		}
-
-		// MARK: - Demo budget handling
-
-		if (isDemo) {
-			// For the demo budget, we will create realistic fake data instead of fetching from the API. This allows users to see how the app works without needing to connect their YNAB account or have any existing data in their account.
-			await createFakeDataForDemo();
-
-			fetchingData = false;
-
-			return;
-		}
-
-		// MARK: - Fetch scheduled transactions
-
-		let endpoint = `https://api.ynab.com/v1/budgets/${budgetId}/scheduled_transactions`;
-
-		// Get last knowledge of server
-		const lastKnowledgeOfServerOfScheduledTransactionsForBudget =
-			$currentBudget?.server_knowledge?.scheduled_transactions;
-
-		if (lastKnowledgeOfServerOfScheduledTransactionsForBudget) {
-			endpoint += `?last_knowledge_of_server=${lastKnowledgeOfServerOfScheduledTransactionsForBudget}`;
-		}
-
-		const scheduledTransactionsFetch = await fetch(endpoint, {
-			headers: {
-				Authorization: `Bearer ${sessionStorage.getItem('ynab_access_token')}`
-			}
-		});
-
-		if (!scheduledTransactionsFetch.ok) {
-			console.error('Failed to fetch data:', scheduledTransactionsFetch.statusText);
-
-			if (scheduledTransactionsFetch.status === 401) {
-				toastMessage = 'Unauthorized. Please login again at the home page.';
-			} else {
-				toastMessage = `Failed to fetch data: ${scheduledTransactionsFetch.statusText}`;
-			}
-
-			toastType = 'error';
-			toastVisible = true;
-			fetchingData = false;
-			return;
-		}
-
-		const scheduledTransactionsResponseJson: ScheduledTransactionsResponse =
-			await scheduledTransactionsFetch.json();
-
-		const scheduledTransactions: CustomScheduledTransactionDetail[] =
-			scheduledTransactionsResponseJson.data.scheduled_transactions.map(
-				(scheduledTransaction: ScheduledTransactionDetail) => ({
-					...scheduledTransaction,
-					budget_id: budgetId!,
-					published: true,
-					monthly_amount:
-						scheduledTransaction.amount *
-						getFrequencyMultiplier(scheduledTransaction.frequency as ScheduledTransactionFrequency)
-				})
-			);
-
-		const newScheduledTransactionsServerKnowledge =
-			scheduledTransactionsResponseJson.data.server_knowledge;
-
-		const existingCategoriesServerKnowledge =
-			$currentBudget?.server_knowledge?.category_groups || 0;
-
-		// MARK: - Update budget
-		// Do this even though we don't have server knowledge for category groups yet,
-		// because if category groups fetch fails, we at least have server knowledge for scheduled transactions
-		await db.budgets.update(budgetId, {
-			server_knowledge: {
-				scheduled_transactions: newScheduledTransactionsServerKnowledge,
-				category_groups: existingCategoriesServerKnowledge
-			},
-			last_fetched: new Date()
-		});
-
-		// Bulk put scheduled transactions
-		await db.scheduled_transactions.bulkPut(scheduledTransactions);
-
-		// MARK: - Now fetch category groups with categories nested in each
-
-		endpoint = `https://api.ynab.com/v1/budgets/${budgetId}/categories`;
-
-		// Get last knowledge of server
-		const lastKnowledgeOfServerOfCategoryGroupsForBudget =
-			$currentBudget?.server_knowledge?.category_groups || 0;
-
-		if (lastKnowledgeOfServerOfCategoryGroupsForBudget) {
-			endpoint += `?last_knowledge_of_server=${lastKnowledgeOfServerOfCategoryGroupsForBudget}`;
-		}
-
-		const categoriesFetch = await fetch(endpoint, {
-			headers: {
-				Authorization: `Bearer ${sessionStorage.getItem('ynab_access_token')}`
-			}
-		});
-
-		if (!categoriesFetch.ok) {
-			console.error('Failed to fetch categories:', categoriesFetch.statusText);
-
-			if (categoriesFetch.status === 401) {
-				toastMessage = 'Unauthorized. Please login again at the home page.';
-			} else {
-				toastMessage = `Failed to fetch categories: ${categoriesFetch.statusText}`;
-			}
-			toastType = 'error';
-			toastVisible = true;
-			fetchingData = false;
-			return;
-		}
-
-		const categoriesResponseJson: CategoriesResponse = await categoriesFetch.json();
-
-		const newCategoryGroupsServerKnowledge = categoriesResponseJson.data.server_knowledge;
-
-		// MARK: - Update budget Again
-		await db.budgets.update(budgetId, {
-			server_knowledge: {
-				scheduled_transactions: newScheduledTransactionsServerKnowledge,
-				category_groups: newCategoryGroupsServerKnowledge
-			},
-			last_fetched: new Date()
-		});
-
-		const categoryGroupWithCategories: CustomCategoryGroupWithCategories[] =
-			categoriesResponseJson.data.category_groups.map((group) => ({
-				...group,
-				budget_id: budgetId!
-			}));
-
-		// Bulk put category groups with categories
-		await db.category_groups.bulkPut(categoryGroupWithCategories);
-
-		fetchingData = false;
-	}
-
-	// MARK: - Resetting data for budget
-
-	let resettingData = $state(false);
-
-	function resetDataForBudget() {
-		const budgetIdValue = budgetId;
-
-		if (!budgetIdValue) {
-			console.error('Budget ID is missing.');
-			return;
-		}
-
-		if (
-			!confirm(
-				'Are you sure you want to reset the data for this plan? This action cannot be undone.'
-			)
-		) {
-			return;
-		}
-
-		resettingData = true;
-
-		db.transaction('rw', db.budgets, db.scheduled_transactions, db.category_groups, async () => {
-			await db.scheduled_transactions.where('budget_id').equals(budgetIdValue).delete();
-			await db.category_groups.where('budget_id').equals(budgetIdValue).delete();
-			await db.budgets.update(budgetIdValue, {
-				server_knowledge: {
-					scheduled_transactions: 0,
-					category_groups: 0
-				},
-				last_fetched: undefined
-			});
-		})
-			.catch((error) => {
-				console.error('Failed to reset data for budget:', error);
-			})
-			.finally(() => {
-				resettingData = false;
-			});
-	}
-
 	// MARK: - Sorting options with localStorage persistence
 
-	let sortBy = $state('date_next');
-	let sortDirection = $state('asc');
+	type SortPreset = 'monthly_amount_desc' | 'date_next_asc';
+	let sortPreset = $state<SortPreset>('date_next_asc');
 
 	// MARK: - Loading state for async bill operations
 
@@ -414,40 +102,21 @@
 
 	// MARK: - Date validation constraints (YNAB API requires date within 1 week ago to 5 years in future)
 
-	let minBillDate = $derived.by(() => {
-		const oneWeekAgo = new SvelteDate();
-		oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-		return oneWeekAgo.toISOString().split('T')[0];
-	});
-
-	let maxBillDate = $derived.by(() => {
-		const fiveYearsFromNow = new SvelteDate();
-		fiveYearsFromNow.setFullYear(fiveYearsFromNow.getFullYear() + 5);
-		return fiveYearsFromNow.toISOString().split('T')[0];
-	});
-
 	$effect(() => {
 		if (!browser) return;
 
 		if (typeof localStorage === 'undefined') return;
 
-		const storedSortBy = localStorage.getItem('sort_by');
-		const storedSortDirection = localStorage.getItem('sort_direction');
-
-		if (storedSortBy === 'date_next' || storedSortBy === 'monthly_amount') {
-			sortBy = storedSortBy;
-		}
-
-		if (storedSortDirection === 'asc' || storedSortDirection === 'desc') {
-			sortDirection = storedSortDirection;
+		const stored = localStorage.getItem('sort_preset');
+		if (stored === 'monthly_amount_desc' || stored === 'date_next_asc') {
+			sortPreset = stored;
 		}
 	});
 
 	$effect(() => {
 		if (!browser) return;
 		if (typeof localStorage === 'undefined') return;
-		localStorage.setItem('sort_by', sortBy);
-		localStorage.setItem('sort_direction', sortDirection);
+		localStorage.setItem('sort_preset', sortPreset);
 	});
 
 	// MARK: - Bills list with live updates from IndexedDB
@@ -460,249 +129,29 @@
 			.toArray()
 	);
 
-	// Sort transactions reactively based on sortBy and sortDirection
+	// Sort transactions reactively based on sortPreset
 	let bills = $derived.by(() => {
 		const transactions = $rawBills;
 		if (!transactions) return [];
 
-		if (sortBy === 'date_next') {
+		if (sortPreset === 'date_next_asc') {
 			return [...transactions].sort((a, b) => {
 				const dateA = new Date(a.date_next).getTime();
 				const dateB = new Date(b.date_next).getTime();
-				return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+				return dateA - dateB;
 			});
-		} else if (sortBy === 'monthly_amount') {
+		}
+		if (sortPreset === 'monthly_amount_desc') {
 			return [...transactions].sort((a, b) => {
 				if (a.monthly_amount === undefined || b.monthly_amount === undefined) {
-					return 0; // If monthly_amount is missing, consider them equal for sorting
+					return 0;
 				}
-
-				return sortDirection === 'desc'
-					? a.monthly_amount - b.monthly_amount
-					: b.monthly_amount - a.monthly_amount;
+				return a.monthly_amount - b.monthly_amount;
 			});
 		}
 
 		return transactions;
 	});
-
-	// MARK: - Frequency parsing
-
-	function parseFrequencyText(frequency: ScheduledTransactionFrequency) {
-		switch (frequency) {
-			case 'never':
-				return 'Never';
-			case 'daily':
-				return 'Daily';
-			case 'weekly':
-				return 'Weekly';
-			case 'everyOtherWeek':
-				return 'Every Other Week';
-			case 'twiceAMonth':
-				return 'Twice Monthly';
-			case 'monthly':
-				return 'Monthly';
-			case 'everyOtherMonth':
-				return 'Every Other Month';
-			case 'every3Months':
-				return 'Every 3 Months';
-			case 'every4Months':
-				return 'Every 4 Months';
-			case 'twiceAYear':
-				return 'Twice Yearly';
-			case 'yearly':
-				return 'Yearly';
-			case 'everyOtherYear':
-				return 'Every Other Year';
-			default:
-				return frequency;
-		}
-	}
-
-	// MARK: - Date formatting
-
-	function convertToReadableDate(dateString: string) {
-		const date = new Date(dateString);
-		return date.toLocaleDateString(undefined, {
-			year: 'numeric',
-			month: 'short',
-			day: 'numeric'
-		});
-	}
-
-	// MARK: - Relative date formatting
-
-	function getRelativeDate(dateString: string) {
-		const today = new Date();
-		const targetDate = new Date(dateString);
-		const diffTime = targetDate.getTime() - today.getTime();
-		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-		if (diffDays > 0) {
-			return `in ${diffDays} day${diffDays > 1 ? 's' : ''}`;
-		} else if (diffDays < 0) {
-			return `${Math.abs(diffDays)} day${Math.abs(diffDays) > 1 ? 's' : ''} ago`;
-		} else {
-			return 'today';
-		}
-	}
-
-	// MARK: - Due date color coding
-
-	// Color coding constants
-	const RED_RANGE_DAYS = 7; // 0-7 days: Red gradient
-	const YELLOW_RANGE_DAYS = 30; // 8-30 days: Yellow gradient
-	const GREEN_RANGE_DAYS = 30; // Days for green gradient transition (31-60 days)
-	const TEXT_COLOR_THRESHOLD = 0.5; // Ratio threshold for switching text color
-
-	/**
-	 * Calculate gradient colors for due dates based on proximity to today
-	 * Red (closest) -> Yellow (mid-range) -> Green (furthest)
-	 * @param dateString - The due date string in ISO 8601 format (e.g., "2026-01-26T00:00:00")
-	 * @returns Object with backgroundColor (CSS color string) and textColor (CSS color string)
-	 * @example
-	 * // Returns red for dates within 7 days
-	 * getDueDateColors("2026-01-26T00:00:00") // { backgroundColor: "rgb(255, 0, 0)", textColor: "#FFFFFF" }
-	 * // Returns yellow for dates 8-30 days away
-	 * getDueDateColors("2026-02-15T00:00:00") // { backgroundColor: "rgb(220, 200, 0)", textColor: "#000000" }
-	 * // Returns green for dates 31+ days away
-	 * getDueDateColors("2026-03-01T00:00:00") // { backgroundColor: "rgb(150, 220, 40)", textColor: "#000000" }
-	 */
-	function getDueDateColors(dateString: string): { backgroundColor: string; textColor: string } {
-		const today = new SvelteDate();
-		today.setHours(0, 0, 0, 0);
-		const targetDate = new SvelteDate(dateString);
-		targetDate.setHours(0, 0, 0, 0);
-		const diffTime = targetDate.getTime() - today.getTime();
-		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-		let backgroundColor: string;
-		let textColor: string;
-
-		if (diffDays < 0) {
-			// Overdue: Dark red
-			backgroundColor = '#8B0000';
-			textColor = '#FFFFFF';
-		} else if (diffDays <= RED_RANGE_DAYS) {
-			// 0-7 days: Red gradient
-			const ratio = diffDays / RED_RANGE_DAYS;
-			// Transition from bright red to orange
-			const red = 255;
-			const green = Math.round(ratio * 100); // 0 to 100
-			const blue = 0;
-			backgroundColor = `rgb(${red}, ${green}, ${blue})`;
-			textColor = '#FFFFFF';
-		} else if (diffDays <= YELLOW_RANGE_DAYS) {
-			// 8-30 days: Yellow gradient
-			const ratio = (diffDays - RED_RANGE_DAYS) / (YELLOW_RANGE_DAYS - RED_RANGE_DAYS);
-			// Transition from orange/yellow to light yellow
-			const red = Math.round(255 - ratio * 55); // 255 to 200
-			const green = Math.round(100 + ratio * 155); // 100 to 255
-			const blue = 0;
-			backgroundColor = `rgb(${red}, ${green}, ${blue})`;
-			textColor = ratio > TEXT_COLOR_THRESHOLD ? '#000000' : '#FFFFFF';
-		} else {
-			// 31+ days: Green gradient (capped at 60 days)
-			const ratio = Math.min((diffDays - YELLOW_RANGE_DAYS) / GREEN_RANGE_DAYS, 1);
-			// Transition from light green to darker green
-			const red = Math.round(200 - ratio * 110); // 200 to 90
-			const green = Math.round(255 - ratio * 75); // 255 to 180
-			const blue = Math.round(0 + ratio * 80); // 0 to 80
-			backgroundColor = `rgb(${red}, ${green}, ${blue})`;
-			textColor = '#000000';
-		}
-
-		return { backgroundColor, textColor };
-	}
-
-	// MARK: - Amount formatting
-
-	function determineAmountStringFromBudgetCurrency(amount: number) {
-		const budgetCurrency = $currentBudget?.currency_format?.iso_code || 'USD';
-		const formatter = new Intl.NumberFormat(undefined, {
-			style: 'currency',
-			currency: budgetCurrency
-		});
-		return formatter.format(amount / 1000);
-	}
-
-	// MARK: - Last fetched timestamp formatting
-
-	function formatLastFetched(lastFetched?: Date) {
-		if (!lastFetched) return 'Never';
-
-		const date = lastFetched instanceof Date ? lastFetched : new Date(lastFetched);
-		const now = new Date();
-		const diffMs = now.getTime() - date.getTime();
-		const diffMins = Math.floor(diffMs / (1000 * 60));
-		const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-		const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-		// Show relative time if recent
-		if (diffMins < 1) return 'Just now';
-		if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-		if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-		if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-
-		// Otherwise show formatted date
-		return date.toLocaleDateString(undefined, {
-			year: 'numeric',
-			month: 'short',
-			day: 'numeric',
-			hour: 'numeric',
-			minute: '2-digit'
-		});
-	}
-
-	// MARK: - Toggle exclude status
-
-	async function toggleExcluded(billId: string, currentExcluded: boolean) {
-		await db.scheduled_transactions.update(billId, {
-			excluded: !currentExcluded
-		});
-	}
-
-	// MARK: - Compute monthly equivalent
-
-	function computeMonthlyAmount(
-		amountMilliunits: number,
-		frequency: ScheduledTransactionFrequency
-	) {
-		return amountMilliunits * getFrequencyMultiplier(frequency);
-	}
-
-	// MARK: - Get frequency multiplier for monthly equivalent calculation
-
-	function getFrequencyMultiplier(frequency: ScheduledTransactionFrequency) {
-		switch (frequency) {
-			case 'never':
-				return 0;
-			case 'daily':
-				return 30; // Approximate
-			case 'weekly':
-				return 4; // Approximate
-			case 'everyOtherWeek':
-				return 2; // Approximate
-			case 'twiceAMonth':
-				return 2;
-			case 'monthly':
-				return 1;
-			case 'everyOtherMonth':
-				return 0.5;
-			case 'every3Months':
-				return 1 / 3;
-			case 'every4Months':
-				return 0.25;
-			case 'twiceAYear':
-				return 2 / 12;
-			case 'yearly':
-				return 1 / 12;
-			case 'everyOtherYear':
-				return 0.5 / 12;
-			default:
-				return 0;
-		}
-	}
 
 	// MARK: - Total of bills per month
 
@@ -719,43 +168,6 @@
 		}, 0);
 	});
 
-	// MARK: - Local helpers for syncing and toasts
-
-	function setBillSyncing(billId: string, syncing: boolean) {
-		if (syncing) {
-			billsBeingSynced.add(billId);
-		} else {
-			billsBeingSynced.delete(billId);
-		}
-	}
-
-	// MARK: - Toast display
-
-	function showToast(message: string, type: 'success' | 'error' | 'info' = 'info') {
-		toastMessage = message;
-		toastType = type;
-		toastVisible = true;
-	}
-
-	// MARK: - Get account name by ID
-
-	function getAccountName(accountId: string | undefined | null) {
-		if (!accountId) return undefined;
-		return availableAccounts.find((a: Account) => a.id === accountId)?.name;
-	}
-
-	// MARK: - Find category by id
-	function getCategoryName(categoryId: string | undefined | null) {
-		if (!categoryId || !budgetId) return undefined;
-		for (const group of $categoryGroups.filter((g) => g.budget_id === budgetId)) {
-			const category = group.categories.find((c) => c.id === categoryId);
-			if (category) {
-				return category.name;
-			}
-		}
-		return undefined;
-	}
-
 	function getCategory(categoryId: string | null | undefined): Category | null {
 		if (!budgetId || !categoryId) return null;
 
@@ -769,327 +181,6 @@
 		}
 
 		return null;
-	}
-
-	// MARK: - Bill creation / update / delete handlers
-
-	async function handleSaveBill(shouldPublish: boolean) {
-		if (!budgetId) {
-			showToast('Budget ID is missing.', 'error');
-			return;
-		}
-
-		if (!billFormData.account_id || !billFormData.date) {
-			showToast('Account and date are required.', 'error');
-			return;
-		}
-
-		// Validate date is within YNAB's allowed range (1 week ago to 5 years in future)
-		const selectedDate = new SvelteDate(billFormData.date);
-		const oneWeekAgo = new SvelteDate();
-		oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-		const fiveYearsFromNow = new SvelteDate();
-		fiveYearsFromNow.setFullYear(fiveYearsFromNow.getFullYear() + 5);
-
-		if (selectedDate < oneWeekAgo || selectedDate > fiveYearsFromNow) {
-			showToast(
-				'Date must not be more than 1 week in the past or over 5 years in the future.',
-				'error'
-			);
-			return;
-		}
-
-		const amountMilliunits = -Math.abs(Math.round(Number(billFormData.amount || 0) * 1000));
-		if (amountMilliunits === 0) {
-			showToast('Amount must be greater than zero.', 'error');
-			return;
-		}
-
-		const frequency = billFormData.frequency || 'monthly';
-		const accountName = getAccountName(billFormData.account_id);
-
-		if (!accountName) {
-			showToast('Selected account not found.', 'error');
-			return;
-		}
-
-		const baseData:
-			| PostScheduledTransactionWrapper['scheduled_transaction']
-			| PutScheduledTransactionWrapper['scheduled_transaction'] = {
-			payee_name: billFormData.payee_name || null,
-			account_id: billFormData.account_id,
-			amount: amountMilliunits,
-			memo: billFormData.memo || null,
-			frequency,
-			date: billFormData.date,
-			category_id: billFormData.category_id || null
-		};
-
-		// Editing existing bill
-		if (editingBillId) {
-			const existingBill = $rawBills.find((b) => b.id === editingBillId);
-			if (!existingBill) {
-				showToast('Bill not found.', 'error');
-				return;
-			}
-
-			if (existingBill.published) {
-				setBillSyncing(existingBill.id, true);
-				const result = await updateBillInYNAB(budgetId, existingBill.id, baseData, isDemo);
-				if (!result.success) {
-					showToast(result.error ?? 'Failed to update bill in YNAB.', 'error');
-					setBillSyncing(existingBill.id, false);
-					return;
-				}
-
-				await db.scheduled_transactions.update(existingBill.id, {
-					account_name: accountName,
-					monthly_amount: computeMonthlyAmount(baseData.amount ?? 0, frequency),
-					published: true,
-					subtransactions: [...existingBill.subtransactions],
-					budget_id: existingBill.budget_id,
-					date_first: existingBill.date_first,
-					date_next: baseData.date ?? existingBill.date_next,
-					frequency: baseData.frequency ?? existingBill.frequency,
-					account_id: baseData.account_id,
-					amount: baseData.amount ?? existingBill.amount,
-					memo: baseData.memo ?? existingBill.memo,
-					payee_name: baseData.payee_name ?? existingBill.payee_name,
-					deleted: existingBill.deleted,
-					category_id: baseData.category_id ?? existingBill.category_id,
-					category_name: getCategoryName(baseData.category_id ?? existingBill.category_id) || null
-				});
-				setBillSyncing(existingBill.id, false);
-				if (isDemo) {
-					showToast('Bill updated in YNAB (not).', 'success');
-				} else {
-					showToast('Bill updated in YNAB.', 'success');
-				}
-				closeBillModal();
-				return;
-			}
-
-			// Draft editing
-			if (shouldPublish) {
-				setBillSyncing(existingBill.id, true);
-				const createResult = await createBillInYNAB(budgetId, baseData, isDemo);
-				if (!createResult.success || !createResult.id) {
-					showToast(createResult.error ?? 'Failed to publish draft bill.', 'error');
-					setBillSyncing(existingBill.id, false);
-					return;
-				}
-
-				const newId = createResult.id;
-				const publishedBill: CustomScheduledTransactionDetail = {
-					id: newId,
-					budget_id: budgetId,
-					account_name: accountName,
-					published: true,
-					monthly_amount: computeMonthlyAmount(baseData.amount ?? 0, frequency),
-					date_next: baseData.date ?? existingBill.date_next,
-					date_first: existingBill.date_first,
-					deleted: existingBill.deleted,
-					frequency: baseData.frequency ?? existingBill.frequency,
-					account_id: baseData.account_id,
-					category_id: baseData.category_id ?? existingBill.category_id,
-					category_name: getCategoryName(baseData.category_id ?? existingBill.category_id) || null,
-					amount: baseData.amount ?? existingBill.amount,
-					memo: baseData.memo ?? existingBill.memo,
-					payee_name: baseData.payee_name ?? existingBill.payee_name,
-					subtransactions: [...existingBill.subtransactions]
-				};
-
-				await db.scheduled_transactions.delete(existingBill.id);
-				await db.scheduled_transactions.put(publishedBill);
-				setBillSyncing(existingBill.id, false);
-				showToast('Draft published to YNAB.', 'success');
-				closeBillModal();
-				return;
-			}
-
-			// Save draft locally
-			await db.scheduled_transactions.update(existingBill.id, {
-				account_name: accountName,
-				published: false,
-				monthly_amount: computeMonthlyAmount(baseData.amount ?? 0, frequency),
-				date_next: baseData.date ?? existingBill.date_next,
-				budget_id: existingBill.budget_id,
-				date_first: existingBill.date_first,
-				frequency: baseData.frequency ?? existingBill.frequency,
-				account_id: baseData.account_id,
-				amount: baseData.amount ?? existingBill.amount,
-				memo: baseData.memo ?? existingBill.memo,
-				payee_name: baseData.payee_name ?? existingBill.payee_name,
-				deleted: existingBill.deleted,
-				subtransactions: [...existingBill.subtransactions],
-				category_id: baseData.category_id ?? existingBill.category_id,
-				category_name: getCategoryName(baseData.category_id ?? existingBill.category_id) || null
-			});
-			showToast('Draft saved locally.', 'success');
-			closeBillModal();
-			return;
-		}
-
-		// Creating new bill
-		if (shouldPublish) {
-			const tempId = crypto.randomUUID();
-			setBillSyncing(tempId, true);
-			const createResult = await createBillInYNAB(budgetId, baseData, isDemo);
-			if (!createResult.success || !createResult.id) {
-				showToast(createResult.error ?? 'Failed to create bill in YNAB.', 'error');
-				setBillSyncing(tempId, false);
-				return;
-			}
-
-			const newId = createResult.id;
-			await db.scheduled_transactions.put({
-				id: newId,
-				budget_id: budgetId,
-				account_name: accountName,
-				published: true,
-				monthly_amount: computeMonthlyAmount(baseData.amount ?? 0, frequency),
-				date_first: baseData.date,
-				date_next: baseData.date,
-				deleted: false,
-				subtransactions: [],
-				frequency: baseData.frequency ?? 'monthly',
-				account_id: baseData.account_id,
-				amount: baseData.amount ?? 0,
-				memo: baseData.memo ?? null,
-				payee_name: baseData.payee_name ?? null,
-				category_id: baseData.category_id || null,
-				category_name: getCategoryName(baseData.category_id || null) || null
-			});
-			setBillSyncing(tempId, false);
-			if (isDemo) {
-				showToast('Bill created in YNAB (not).', 'success');
-			} else {
-				showToast('Bill created in YNAB.', 'success');
-			}
-			closeBillModal();
-			return;
-		}
-
-		// Save new draft locally
-		const draftId = crypto.randomUUID();
-		await db.scheduled_transactions.put({
-			id: draftId,
-			budget_id: budgetId,
-			account_name: accountName,
-			published: false,
-			monthly_amount: computeMonthlyAmount(baseData.amount ?? 0, frequency),
-			date_first: baseData.date,
-			date_next: baseData.date,
-			deleted: false,
-			subtransactions: [],
-			frequency: baseData.frequency ?? 'monthly',
-			account_id: baseData.account_id,
-			amount: baseData.amount ?? 0,
-			memo: baseData.memo ?? null,
-			payee_name: baseData.payee_name ?? null,
-			category_id: baseData.category_id || null,
-			category_name: getCategoryName(baseData.category_id || null) || null
-		});
-		showToast('Draft saved locally.', 'success');
-		closeBillModal();
-	}
-
-	// MARK: - Delete bill handler
-
-	async function handleDeleteBill(bill: CustomScheduledTransactionDetail) {
-		if (!budgetId) {
-			showToast('Budget ID is missing.', 'error');
-			return;
-		}
-
-		if (!bill) return;
-		if (!bill.published) {
-			await db.scheduled_transactions.delete(bill.id);
-			showToast('Draft deleted.', 'success');
-			return;
-		}
-
-		if (!confirm('Delete this bill in YNAB?')) return;
-		setBillSyncing(bill.id, true);
-		const result = await deleteBillInYNAB(budgetId, bill.id, isDemo);
-		if (!result.success) {
-			showToast(result.error ?? 'Failed to delete bill.', 'error');
-			setBillSyncing(bill.id, false);
-			return;
-		}
-
-		await db.scheduled_transactions.delete(bill.id);
-		setBillSyncing(bill.id, false);
-		if (isDemo) {
-			showToast('Bill deleted in YNAB (not).', 'success');
-		} else {
-			showToast('Bill deleted in YNAB.', 'success');
-		}
-	}
-
-	// MARK: - Publish draft bill to YNAB
-
-	async function publishDraftBill(bill: CustomScheduledTransactionDetail) {
-		if (!budgetId) {
-			showToast('Budget ID is missing.', 'error');
-			return;
-		}
-		if (!bill) return;
-		if (!confirm('Publish this draft to YNAB?')) return;
-		setBillSyncing(bill.id, true);
-
-		const accountName = getAccountName(bill.account_id);
-
-		if (!accountName) {
-			showToast('Account for the bill not found.', 'error');
-			setBillSyncing(bill.id, false);
-			return;
-		}
-
-		const payload: PostScheduledTransactionWrapper['scheduled_transaction'] = {
-			payee_name: bill.payee_name || null,
-			account_id: bill.account_id,
-			amount: bill.amount,
-			memo: bill.memo || null,
-			frequency: bill.frequency,
-			date: bill.date_next
-		};
-
-		const result = await createBillInYNAB(budgetId, payload, isDemo);
-		if (!result.success || !result.id) {
-			showToast(result.error ?? 'Failed to publish draft bill.', 'error');
-			setBillSyncing(bill.id, false);
-			return;
-		}
-
-		const newId = result.id;
-		const publishedBill: CustomScheduledTransactionDetail = {
-			id: newId,
-			published: true,
-			account_name: accountName,
-			monthly_amount: computeMonthlyAmount(bill.amount, bill.frequency),
-			date_next: bill.date_next ?? bill.date_first,
-			date_first: bill.date_first,
-			budget_id: budgetId,
-			frequency: bill.frequency,
-			account_id: bill.account_id,
-			amount: bill.amount,
-			memo: bill.memo,
-			payee_name: bill.payee_name,
-			deleted: false,
-			subtransactions: [],
-			category_id: bill.category_id || null,
-			category_name: getCategoryName(bill.category_id || null) || null
-		};
-
-		await db.scheduled_transactions.delete(bill.id);
-		await db.scheduled_transactions.put(publishedBill);
-		setBillSyncing(bill.id, false);
-		if (isDemo) {
-			showToast('Draft published to YNAB (not).', 'success');
-		} else {
-			showToast('Draft published to YNAB.', 'success');
-		}
 	}
 
 	let categoryGroups = liveQuery(() => {
@@ -1111,283 +202,6 @@
 
 <svelte:head>
 	<title>Plan &mdash; {$currentBudget?.name} | Bills (For YNAB)</title>
-
-	<!-- MARK: Styles -->
-
-	<style>
-		.container {
-			gap: 4rem;
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			justify-content: center;
-			padding: 2rem;
-		}
-		.bill {
-			border: 1px solid #ddd;
-			padding: 8px;
-			gap: 1px;
-			position: relative;
-		}
-		.bill.draft {
-			border-style: dashed;
-		}
-		.bill.excluded {
-			opacity: 0.5;
-			background-color: #f5f5f5;
-		}
-		.bill-actions {
-			display: flex;
-			gap: 8px;
-			justify-content: flex-end;
-		}
-		.due-date-badge {
-			display: inline-block;
-			padding: 4px 8px;
-			border-radius: 4px;
-			font-weight: 600;
-			transition: all 0.3s ease;
-		}
-		.toggle-exclude {
-			background: white;
-			border: 1px solid #ccc;
-			border-radius: 4px;
-			padding: 4px 8px;
-			cursor: pointer;
-			font-size: 14px;
-			transition: all 0.2s;
-			color: #333;
-		}
-		.toggle-exclude:hover {
-			background: #f0f0f0;
-		}
-		.delete-bill-button {
-			background: white;
-			border: 1px solid #ccc;
-			border-radius: 4px;
-			padding: 4px 8px;
-			cursor: pointer;
-			font-size: 14px;
-			transition: all 0.2s;
-			color: #333;
-		}
-		.delete-bill-button:hover {
-			background: #f0f0f0;
-		}
-		.edit-bill-button {
-			background: white;
-			border: 1px solid #ccc;
-			border-radius: 4px;
-			padding: 4px 8px;
-			cursor: pointer;
-			font-size: 14px;
-			transition: all 0.2s;
-			color: #333;
-		}
-		.edit-bill-button:hover {
-			background: #f0f0f0;
-		}
-		.draft-badge {
-			position: absolute;
-			top: 8px;
-			left: 8px;
-			background: #f59e0b;
-			color: white;
-			padding: 2px 6px;
-			border-radius: 4px;
-			font-size: 12px;
-			font-weight: 600;
-		}
-		.bill-loading {
-			position: absolute;
-			top: 8px;
-			right: 8px;
-			background: #2563eb;
-			color: white;
-			padding: 2px 8px;
-			border-radius: 4px;
-			font-size: 12px;
-		}
-		.bill-container {
-			display: grid;
-			gap: 16px;
-			grid-template-columns: repeat(4, minmax(200px, 1fr));
-		}
-		.actions {
-			display: flex;
-			gap: 16px;
-			align-items: center;
-		}
-		.options {
-			display: flex;
-			gap: 8px;
-		}
-		.stats {
-			display: flex;
-			gap: 16px;
-			position: sticky;
-			top: 0;
-			background: white;
-			padding: 12px 0;
-			z-index: 100;
-			border-bottom: 2px solid #e0e0e0;
-			margin-bottom: 16px;
-			width: 100%;
-		}
-		.monthly-equivalent {
-			margin-bottom: 10px;
-		}
-		.create-bill-button:disabled {
-			opacity: 0.5;
-			cursor: not-allowed;
-		}
-		.modal-backdrop {
-			position: fixed;
-			top: 0;
-			left: 0;
-			right: 0;
-			bottom: 0;
-			background: rgba(0, 0, 0, 0.35);
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			z-index: 1000;
-		}
-		.modal {
-			background: white;
-			padding: 24px;
-			border-radius: 12px;
-			width: min(520px, 95vw);
-			box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
-			display: flex;
-			flex-direction: column;
-			gap: 16px;
-		}
-		.form-grid {
-			display: grid;
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-			gap: 12px;
-		}
-		.form-grid label {
-			display: flex;
-			flex-direction: column;
-			gap: 4px;
-			font-size: 14px;
-			color: #333;
-		}
-		.form-grid input,
-		.form-grid select {
-			padding: 8px;
-			border: 1px solid #ccc;
-			border-radius: 6px;
-			font-size: 14px;
-		}
-		.published-toggle {
-			flex-direction: row !important;
-			align-items: center;
-			gap: 8px !important;
-		}
-		.modal-actions {
-			display: flex;
-			gap: 12px;
-			justify-content: flex-end;
-		}
-		.modal-actions .primary {
-			background: #2563eb;
-			color: white;
-			border: none;
-			padding: 8px 14px;
-			border-radius: 6px;
-			cursor: pointer;
-		}
-		.modal-actions .secondary {
-			background: white;
-			border: 1px solid #ccc;
-			padding: 8px 14px;
-			border-radius: 6px;
-			cursor: pointer;
-			color: #333;
-		}
-
-		.modal-actions .primary:disabled {
-			opacity: 0.5;
-			cursor: not-allowed;
-		}
-
-		.modal-actions .secondary:disabled {
-			opacity: 0.5;
-			cursor: not-allowed;
-		}
-
-		@media screen and (max-width: 600px) {
-			.bill-container {
-				display: grid;
-				gap: 16px;
-				width: 100%;
-				grid-template-columns: 1fr;
-			}
-			.actions {
-				flex-direction: column;
-				width: 100%;
-			}
-			.actions a,
-			.actions button {
-				width: 100%;
-			}
-
-			.stats {
-				display: block;
-			}
-		}
-
-		@media (prefers-color-scheme: dark) {
-			.stats {
-				background: #2f2f2f;
-				border-bottom-color: #444;
-			}
-			.bill {
-				border-color: #444;
-			}
-			.bill.excluded {
-				opacity: 0.25;
-				background-color: #000;
-			}
-			.toggle-exclude {
-				background: #222;
-				border-color: #555;
-				color: #eee;
-			}
-			.toggle-exclude:hover {
-				background: #333;
-			}
-			.modal {
-				background: #222;
-			}
-			.form-grid label {
-				color: #eee;
-			}
-			.delete-bill-button {
-				background: #222;
-			}
-			.delete-bill-button:hover {
-				background: #333;
-			}
-			.edit-bill-button {
-				background: #222;
-			}
-			.edit-bill-button:hover {
-				background: #333;
-			}
-			.modal-actions .secondary {
-				background: #222;
-				border-color: #555;
-				color: #eee;
-			}
-			.modal-actions .secondary:hover {
-				background: #333;
-			}
-		}
-	</style>
 </svelte:head>
 
 <!-- MARK: - Window Events -->
@@ -1395,316 +209,182 @@
 <svelte:window
 	onkeydown={(e: KeyboardEvent) => {
 		if (e.key === 'Escape') {
-			closeBillModal();
+			goto(resolve(`/`));
 		}
 	}}
 />
 
-<!-- MARK: - Toast -->
-<Toast message={toastMessage} type={toastType} bind:visible={toastVisible} />
-
-<!-- MARK: - Bill Modal -->
-{#if showBillModal}
-	<div class="modal-backdrop">
-		<div class="modal">
-			<h2>{editingBillId ? 'Edit Bill' : 'Create Bill'}</h2>
-			<form
-				onsubmit={(e: Event) => {
-					e.preventDefault();
-					handleSaveBill(billFormData.published);
-				}}
-			>
-				<div class="form-grid">
-					<label>
-						Account*
-						<select bind:value={billFormData.account_id} required>
-							<option value="">Select account</option>
-							{#each groupedByTypeAvailableAccounts as accountGroup (accountGroup)}
-								<optgroup label={parseAccountType(accountGroup) ?? 'Other'}>
-									{#each availableAccounts.filter((a) => a.type === accountGroup) as account (account.id)}
-										<option value={account.id}>{account.name}</option>
-									{/each}
-								</optgroup>
-							{/each}
-						</select>
-					</label>
-					<label>
-						Date*
-						<input
-							type="date"
-							bind:value={billFormData.date}
-							min={minBillDate}
-							max={maxBillDate}
-							required
-						/>
-					</label>
-					<label>
-						Amount {$currentBudget?.currency_format?.currency_symbol
-							? `(in ${$currentBudget.currency_format.iso_code})`
-							: null}*
-						<input
-							type="number"
-							step="0.01"
-							min="0"
-							bind:value={billFormData.amount}
-							placeholder="75.00"
-						/>
-					</label>
-					<label>
-						Payee (optional)
-						<input type="text" bind:value={billFormData.payee_name} placeholder="Payee name" />
-					</label>
-					<label>
-						Category (optional)
-						<select bind:value={billFormData.category_id}>
-							<option value="">Select category</option>
-							{#each $categoryGroups as group (group.id)}
-								<optgroup label={group.name}>
-									{#each group.categories as category (category.id)}
-										<option value={category.id}>{category.name}</option>
-									{/each}
-								</optgroup>
-							{/each}
-						</select>
-					</label>
-					<label>
-						Memo (optional)
-						<input type="text" bind:value={billFormData.memo} placeholder="Notes" />
-					</label>
-					{#if editingBillId && unsupportedFrequencies.includes(billFormData.frequency)}
-						<p>Frequency: {parseFrequencyText(billFormData.frequency)}</p>
-					{:else}
-						<label>
-							Frequency
-							<select bind:value={billFormData.frequency}>
-								{#each supportedFrequencies as frequency (frequency)}
-									<option value={frequency}>{parseFrequencyText(frequency)}</option>
-								{/each}
-							</select>
-							<div>
-								<small
-									style="cursor: help; margin-top: 0.5rem; color: #335d92;"
-									data-tooltip="Note: Due to a bug with YNAB's API, some frequencies may not be editable when updating an existing bill. These include: {unsupportedFrequencies.join(
-										', '
-									)}.">What about other frequencies?</small
-								>
-							</div>
-						</label>
-					{/if}
-					<label class="published-toggle">
-						<input
-							type="checkbox"
-							bind:checked={billFormData.published}
-							disabled={editingBillId !== null && billFormData.published}
-						/>
-						Published
-					</label>
-				</div>
-				{#if !!editingBillId && unsupportedFrequencies.includes(billFormData.frequency)}
-					<div>
-						<p>Why can't I update this bill?</p>
-						<p>
-							Due to a bug with YNAB's API, it's not possible to update a bill with a frequency
-							within the following list: {unsupportedFrequencies.join(', ')}.
-						</p>
-						<p>
-							We apologize for the inconvenience, and we're working with YNAB's API team to get this
-							matter sorted.
-						</p>
-					</div>
-				{/if}
-				<div class="modal-actions">
-					<button type="button" class="secondary" onclick={closeBillModal}>Cancel</button>
-					<button
-						class="primary"
-						disabled={!!editingBillId && unsupportedFrequencies.includes(billFormData.frequency)}
-					>
-						{billFormData.published ? 'Save & Publish' : 'Save Draft'}
-					</button>
-				</div>
-			</form>
-		</div>
-	</div>
-{/if}
-
-<main class="container">
+<main class="flex w-full flex-col items-center gap-8">
 	{#if budgetId}
+		<div class="w-full">
+			<a
+				href={resolve('/')}
+				class="text-sm font-medium text-stone-600 hover:underline dark:text-stone-400"
+			>
+				← Plans
+			</a>
+			<h1 class="mt-2 text-lg font-medium text-stone-800 dark:text-stone-200">
+				{$currentBudget?.name ?? 'Plan'}
+			</h1>
+		</div>
+
 		<!-- MARK: - Actions -->
-		<div class="actions">
-			<a href={resolve('/')}>Back to Plans</a>
-			<button disabled={fetchingData} onclick={fetchData}>
-				{fetchingData ? 'Fetching...' : 'Fetch Data'}
-			</button>
-			<button disabled={resettingData} onclick={resetDataForBudget}>
-				{resettingData ? 'Resetting...' : 'Reset Data'}
-			</button>
+		<div class="flex w-full flex-wrap items-center gap-3">
+			<FetchDataButton currentBudget={$currentBudget} {isDemo} />
+			<ResetDataButton currentBudget={$currentBudget} />
 			{#if effectiveWriteAccess}
-				<button
-					class="create-bill-button"
-					disabled={!effectiveWriteAccess}
-					onclick={() => openBillModal()}
+				<a
+					href={effectiveWriteAccess
+						? resolve(`/plan/${budgetId}/bill/new`)
+						: resolve(`/plan/${budgetId}`)}
+					class="rounded-lg bg-stone-800 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-700 dark:hover:bg-stone-600 {!effectiveWriteAccess
+						? 'pointer-events-none opacity-50'
+						: ''}"
 					data-tooltip={effectiveWriteAccess
-						? null
-						: 'You need write access to create bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
+						? undefined
+						: 'You need write access to create bills. Click "Login With YNAB (Read and Write)" to enable this feature.'}
 				>
 					Create Bill
-				</button>
+				</a>
 			{/if}
 		</div>
+
 		<!-- MARK: - Options -->
-		<div class="options">
-			<div>
-				<label for="sort_by">Sort By:</label>
-				<select id="sort_by" bind:value={sortBy}>
-					<option value="date_next">Next Due Date</option>
-					<option value="monthly_amount">Monthly Amount</option>
-				</select>
-			</div>
-			<div>
-				<label for="sort_direction">Sort Direction:</label>
-				<select id="sort_direction" bind:value={sortDirection}>
-					<option value="asc">Ascending</option>
-					<option value="desc">Descending</option>
-				</select>
-			</div>
+		<div class="mx-auto flex max-w-md flex-wrap items-center justify-center gap-4 lg:w-full">
+			<label for="sort_preset" class="text-sm text-stone-700 dark:text-stone-300"> Sort: </label>
+			<select
+				id="sort_preset"
+				bind:value={sortPreset}
+				class="w-full rounded-md border border-stone-300 bg-white px-2 py-1.5 text-sm text-stone-800 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+			>
+				<option value="monthly_amount_desc">Monthly Amount (Descending)</option>
+				<option value="date_next_asc">Next Due Date (Ascending)</option>
+			</select>
 		</div>
+
 		<!-- MARK: - Stats -->
-		<div class="stats">
-			<p>
-				Total Bills Per Month:
-				<strong>
-					{determineAmountStringFromBudgetCurrency(-totalBillsPerMonth)}
-				</strong>
+		<div
+			class="sticky top-2 z-10 mb-4 flex w-full flex-wrap gap-6 rounded-lg border-b border-stone-200 bg-stone-50 px-4 py-4 shadow-sm lg:top-0 dark:border-stone-700 dark:bg-stone-900/50"
+		>
+			<p class="text-sm text-stone-600 dark:text-stone-400">
+				Total per month: <strong class="text-stone-900 dark:text-stone-100"
+					>{determineAmountStringFromBudgetCurrency(-totalBillsPerMonth, $currentBudget)}</strong
+				>
 			</p>
-			<p>
-				Total Bills Per Year:
-				<strong>
-					{determineAmountStringFromBudgetCurrency(-totalBillsPerMonth * 12)}
-				</strong>
+			<p class="text-sm text-stone-600 dark:text-stone-400">
+				Total per year: <strong class="text-stone-900 dark:text-stone-100"
+					>{determineAmountStringFromBudgetCurrency(
+						-totalBillsPerMonth * 12,
+						$currentBudget
+					)}</strong
+				>
 			</p>
-			<p>
-				Last Fetched:
-				<strong>
-					{formatLastFetched($currentBudget?.last_fetched)}
-				</strong>
-			</p>
-			<p>
-				Total Excluded: <strong>{bills.filter((bill) => bill.excluded).length}</strong>
+			<LastFetchedDate currentBudget={$currentBudget} />
+			<p class="text-sm text-stone-600 dark:text-stone-400">
+				Excluded: <strong class="text-stone-900 dark:text-stone-100"
+					>{bills.filter((bill) => bill.excluded).length}</strong
+				>
 			</p>
 		</div>
 		<!-- MARK: - Bills -->
 		{#if bills.length === 0}
-			<p>No bills found.</p>
+			<div
+				class="w-full rounded-lg border border-dashed border-stone-200 bg-stone-100 py-12 text-center dark:border-stone-700 dark:bg-stone-800/30"
+			>
+				<p class="mb-4 text-stone-600 dark:text-stone-400">No bills found.</p>
+				{#if effectiveWriteAccess}
+					<a
+						href={resolve(`/plan/${budgetId}/bill/new`)}
+						class="rounded-lg bg-stone-800 px-4 py-2 font-medium text-white hover:bg-stone-700 dark:bg-stone-700 dark:hover:bg-stone-600"
+					>
+						Create Bill
+					</a>
+				{:else}
+					<FetchDataButton currentBudget={$currentBudget} {isDemo} />
+				{/if}
+			</div>
 		{:else}
-			<div class="bill-container">
+			<div class="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 				{#each bills as bill (bill.id)}
-					{@const dueDateColors = getDueDateColors(bill.date_next)}
-					{#if billsBeingSynced.has(bill.id)}
-						<!-- loading state marker; no content change needed -->
-					{/if}
-					<div class="bill" class:excluded={bill.excluded} class:draft={!bill.published}>
-						<div class="bill-actions">
-							<!-- MARK: - Toggle Exclude/Include -->
-							<button
-								class="toggle-exclude"
-								onclick={() => toggleExcluded(bill.id, bill.excluded ?? false)}
-								data-tooltip={bill.excluded
-									? 'Excluded from calculations'
-									: 'Included in calculations'}
-								aria-label={bill.excluded
-									? `Include bill to ${bill.payee_name ?? 'unspecified payee'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`
-									: `Exclude bill to ${bill.payee_name ?? 'unspecified payee'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`}
-							>
-								{bill.excluded ? '👁️' : '✓'}
-							</button>
-							<!-- MARK: - Edit/Delete/Publish Buttons -->
+					<div
+						class="relative rounded-lg border p-4 transition-all {bill.excluded
+							? 'bg-stone-100 opacity-50 dark:bg-stone-800/50'
+							: 'border-stone-200 bg-white dark:border-stone-700 dark:bg-stone-800'} {!bill.published
+							? 'border-dashed border-amber-400 dark:border-amber-600'
+							: ''}"
+					>
+						<div class="mb-2 flex justify-end gap-2">
+							<ToggleBillInclusionButton {bill} />
 							{#if effectiveWriteAccess}
-								<button
-									class="edit-bill-button"
-									disabled={!effectiveWriteAccess || billsBeingSynced.has(bill.id)}
-									onclick={() => openBillModal(bill)}
-									data-tooltip={effectiveWriteAccess
-										? 'Edit this bill'
-										: 'You need write access to edit bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
-									aria-label={`Edit bill to ${bill.payee_name ?? 'unspecified payee'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`}
+								<a
+									href={resolve(`/plan/${budgetId}/bill/${bill.id}`)}
+									class="rounded border border-stone-300 bg-white p-1.5 text-sm text-stone-700 hover:bg-stone-100 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700 {billsBeingSynced.has(
+										bill.id
+									)
+										? 'pointer-events-none opacity-50'
+										: ''}"
+									data-tooltip="Edit this bill"
+									aria-label="Edit bill"
 								>
 									✏️
-								</button>
-								<button
-									class="delete-bill-button"
-									disabled={!effectiveWriteAccess ||
-										billsBeingSynced.has(bill.id) ||
-										unsupportedFrequencies.includes(bill.frequency)}
-									onclick={() => handleDeleteBill(bill)}
-									data-tooltip={effectiveWriteAccess
-										? unsupportedFrequencies.includes(bill.frequency)
-											? `Cannot delete bills with frequency: ${unsupportedFrequencies.join(', ')} due to YNAB API limitations.`
-											: 'Delete this bill'
-										: 'You need write access to delete bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
-									aria-label={`Delete bill to ${bill.payee_name ?? 'unspecified payee'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)}`}
-								>
-									🗑️
-								</button>
+								</a>
+								<DeleteBillButton {bill} {isDemo} {billsBeingSynced} {budgetId} />
 								{#if !bill.published}
-									<button
-										class="publish-bill-button"
-										disabled={!effectiveWriteAccess || billsBeingSynced.has(bill.id)}
-										onclick={() => publishDraftBill(bill)}
-										data-tooltip={effectiveWriteAccess
-											? 'Bill is draft. Click to publish to YNAB.'
-											: 'You need write access to publish bills. Click "Login With YNAB (Read and Write)" on the home page to enable this feature.'}
-										aria-label={`Publish draft bill of ${bill.payee_name ?? 'unspecified payee'} of amount ${determineAmountStringFromBudgetCurrency(-bill.amount)} for frequency ${parseFrequencyText(bill.frequency)} to YNAB`}
-									>
-										🚀
-									</button>
+									<PublishDraftBillButton
+										budget={$currentBudget}
+										{bill}
+										{isDemo}
+										{billsBeingSynced}
+										{availableAccounts}
+										categoryGroups={$categoryGroups}
+									/>
 								{/if}
 							{/if}
 						</div>
 						{#if !bill.published}
-							<div class="draft-badge">DRAFT</div>
+							<span
+								class="absolute top-2 left-2 rounded bg-amber-500 px-2 py-0.5 text-xs font-semibold text-white"
+							>
+								DRAFT
+							</span>
 						{/if}
 						{#if billsBeingSynced.has(bill.id)}
-							<div class="bill-loading">Syncing with YNAB…</div>
+							<span
+								class="absolute top-2 right-2 rounded bg-stone-700 px-2 py-0.5 text-xs font-medium text-white"
+							>
+								Syncing…
+							</span>
 						{/if}
-						<!-- MARK: - Bill Details -->
-						<ul>
-							<li class="monthly-equivalent">
-								Monthly Equivalent: {determineAmountStringFromBudgetCurrency(
-									-(bill.monthly_amount ?? bill.amount * getFrequencyMultiplier(bill.frequency))
+						<div class="space-y-2 text-sm">
+							<p class="font-medium text-stone-900 dark:text-stone-100">
+								{determineAmountStringFromBudgetCurrency(
+									-(bill.monthly_amount ?? bill.amount * getFrequencyMultiplier(bill.frequency)),
+									$currentBudget
 								)}
-							</li>
-							<li>
-								<strong>
-									Due: <span
-										class="due-date-badge"
-										style="background-color: {dueDateColors.backgroundColor}; color: {dueDateColors.textColor};"
-									>
-										{convertToReadableDate(bill.date_next)} ({getRelativeDate(bill.date_next)})
-									</span>
-								</strong>
-							</li>
-						</ul>
-						<p>
-							{determineAmountStringFromBudgetCurrency(-bill.amount)} ({parseFrequencyText(
-								bill.frequency
-							)}) to
-							<strong>{bill.payee_name ?? 'unspecified payee'}</strong>
-						</p>
-						<ul>
-							<li>
-								Category: {bill.category_name}
-								{#if getCategory(bill.category_id)}
-									({getCategory(bill.category_id)?.category_group_name})
-								{/if}
-							</li>
-							<li style="margin-top: 0.5em;">Account: {bill.account_name}</li>
-							<li style="margin-top: 0.5em;">
-								<em>
-									First Paid On: {convertToReadableDate(bill.date_first)}
-								</em>
-							</li>
-						</ul>
-						<p>{bill.memo}</p>
+								<span class="font-normal text-stone-500 dark:text-stone-400">/mo</span>
+							</p>
+							<BillDueDate {bill} />
+							<p class="text-stone-700 dark:text-stone-300">
+								{determineAmountStringFromBudgetCurrency(-bill.amount, $currentBudget)}
+								<span class="text-stone-500 dark:text-stone-400">
+									<ParsedFrequency {bill} />
+								</span>
+								to <strong>{bill.payee_name ?? 'unspecified payee'}</strong>
+							</p>
+							<ul class="mt-2 space-y-0.5 text-xs text-stone-500 dark:text-stone-400">
+								<li>
+									Category: {bill.category_name}
+									{getCategory(bill.category_id)
+										? `(${getCategory(bill.category_id)?.category_group_name})`
+										: ''}
+								</li>
+								<li>Account: {bill.account_name}</li>
+								<li><em>First paid: <FirstPaidDate {bill} /></em></li>
+							</ul>
+							{#if bill.memo}
+								<p class="mt-1 text-xs text-stone-500 dark:text-stone-400">{bill.memo}</p>
+							{/if}
+						</div>
 					</div>
 				{/each}
 			</div>

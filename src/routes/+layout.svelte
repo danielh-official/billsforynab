@@ -1,51 +1,39 @@
 <script lang="ts">
-	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import '$lib/app.css';
 	import WorksWithYnab from '$lib/components/WorksWithYnab.svelte';
+	import { db, type CustomBudgetDetail } from '$lib/db';
+	import { liveQuery } from 'dexie';
 	import { page } from '$app/state';
-	import { unsupportedFrequencies } from '$lib';
-	import { PUBLIC_SHOW_API_RESTRICTION_NOTICE } from '$env/static/public';
+	import { resolve } from '$app/paths';
 	import { browser } from '$app/environment';
+	import { goto } from '$app/navigation';
 
 	let { children } = $props();
+
+	let loading = $state(true);
+
+	let authToken = $state<string | null>(null);
+
+	$effect(() => {
+		if (!browser) return;
+
+		setTimeout(() => {
+			loading = false;
+		}, 100);
+
+		authToken = sessionStorage.getItem('ynab_access_token');
+
+		setTimeout(() => {
+			if (authToken) return;
+
+			authToken = sessionStorage.getItem('ynab_access_token');
+		}, 500);
+	});
 
 	const isDemo = $derived.by(() => {
 		return page.params.id === 'demo';
 	});
-
-	let showApiScheduledTransactionsNotice = $derived.by(() => {
-		return (
-			browser && localStorage.getItem('api_scheduled_transactions_notice_dismissed') !== 'true'
-		);
-	});
-
-	let showApiRestrictionNotice = $derived.by(() => {
-		return (
-			PUBLIC_SHOW_API_RESTRICTION_NOTICE === 'true' &&
-			browser &&
-			localStorage.getItem('api_restriction_notice_dismissed') !== 'true'
-		);
-	});
-
-	function dismissApiRestrictionNotice() {
-		if (browser) {
-			localStorage.setItem('api_restriction_notice_dismissed', 'true');
-			showApiRestrictionNotice = false;
-		}
-	}
-
-	function dismissApiScheduledTransactionsNotice() {
-		if (browser) {
-			localStorage.setItem('api_scheduled_transactions_notice_dismissed', 'true');
-			showApiScheduledTransactionsNotice = false;
-		}
-	}
-
-	const atLeastOneNoticeDismissed = $derived.by(() => {
-		return !showApiRestrictionNotice || !showApiScheduledTransactionsNotice;
-	});
-
 	// Demo mode access type (read-only or read-and-write)
 	let demoAccessType = $state<'read-only' | 'read-and-write'>('read-only');
 
@@ -75,6 +63,43 @@
 			demoAccessType = stored;
 		}
 	});
+
+	const accessType = $derived.by(() => {
+		// Get ynab_token_write value from session storage
+		if (browser) {
+			const writeToken = sessionStorage.getItem('ynab_token_write');
+			if (writeToken === 'true') {
+				return 'read and write access';
+			} else {
+				return 'read-only access';
+			}
+		}
+		return 'Unknown';
+	});
+
+	const budgets = liveQuery(() => db.budgets.orderBy('id').toArray());
+
+	function createDemoPlan() {
+		const demoBudget: CustomBudgetDetail = {
+			id: 'demo',
+			name: 'Demo',
+			last_modified_on: new Date().toISOString(),
+			first_month: new Date().toISOString().substring(0, 7),
+			last_month: new Date().toISOString().substring(0, 7),
+			is_default: false
+		};
+
+		db.budgets.put(demoBudget);
+
+		goto(resolve(`/plan/demo`));
+	}
+
+	let demoBudgetAlreadyExists = $derived.by(() => {
+		if ($budgets) {
+			return $budgets.some((b) => b.id === 'demo');
+		}
+		return false;
+	});
 </script>
 
 <svelte:head>
@@ -88,350 +113,138 @@
 	<link rel="icon" href={favicon} />
 
 	<script async defer src="https://buttons.github.io/buttons.js"></script>
-
-	<style>
-		.logo {
-			display: flex;
-			justify-content: end;
-			align-items: center;
-			padding: 2rem;
-		}
-		.referral {
-			display: flex;
-			flex-direction: column;
-			align-items: end;
-			justify-content: center;
-			padding: 0 2rem 2rem 2rem;
-		}
-		.referral-link {
-			display: flex;
-			justify-content: end;
-			align-items: center;
-		}
-		.footer-links {
-			display: flex;
-			gap: 1rem;
-			justify-content: center;
-			align-items: center;
-		}
-		.guide {
-			display: flex;
-			flex-direction: column;
-			align-items: end;
-			padding: 0 2rem 1rem 2rem;
-			font-size: 1rem;
-		}
-		.star-section {
-			display: flex;
-			flex-direction: column;
-			align-items: end;
-			padding: 0 2rem 1rem 2rem;
-			font-size: 1rem;
-			gap: 0.5rem;
-		}
-		.demo-banner {
-			background-color: #fffae6;
-			border: 1px solid #ffe58f;
-			color: #664d03;
-			padding: 1rem;
-			text-align: center;
-		}
-		.demo-banner-content {
-			display: flex;
-			flex-direction: column;
-			gap: 0.5rem;
-			max-width: 600px;
-			margin: 0 auto;
-		}
-		.demo-banner-header {
-			font-weight: bold;
-			font-size: 1.25rem;
-		}
-		.write-access-note {
-			max-width: 600px;
-			margin: 0 auto 1rem auto;
-			padding: 1rem;
-			background-color: #fff3cd;
-			border: 1px solid #ffeeba;
-			color: #856404;
-			border-radius: 4px;
-		}
-		.api-warning {
-			max-width: 600px;
-			padding: 1rem;
-			background-color: #fff3cd;
-			border: 1px solid #ffc107;
-			border-radius: 4px;
-			color: #856404;
-			text-align: center;
-			margin: 0 auto 1rem auto;
-		}
-		.api-warning strong {
-			display: block;
-			margin-bottom: 0.5rem;
-		}
-		.api-warning .close-button {
-			background: none;
-			border: none;
-			font-size: 1.2rem;
-			line-height: 1;
-			cursor: pointer;
-			color: black;
-			display: flex;
-			justify-self: end;
-		}
-		.reactivate-warnings {
-			display: flex;
-			flex-direction: column;
-			align-items: end;
-			padding: 0 2rem 1rem 2rem;
-			font-size: 1rem;
-			gap: 0.5rem;
-		}
-		.reactivate-warnings button {
-			padding: 0.5rem 1rem;
-			font-size: 1rem;
-			cursor: pointer;
-			background-color: transparent;
-			color: #0000ff;
-		}
-		.reactivate-warnings button:hover {
-			text-decoration: underline;
-		}
-		.demo-access-toggle {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			gap: 0.75rem;
-			margin-top: 1rem;
-			padding: 0.75rem;
-			background-color: #fff;
-			border-radius: 6px;
-			border: 1px solid #ffe58f;
-		}
-		.demo-access-toggle > div:first-child {
-			font-weight: 600;
-			font-size: 0.95rem;
-		}
-		.demo-toggle-button {
-			display: flex;
-			align-items: center;
-			gap: 0.5rem;
-			padding: 0.5rem 1rem;
-			border: 2px solid #d4a373;
-			border-radius: 4px;
-			background-color: #f5f5f5;
-			cursor: pointer;
-			font-size: 0.9rem;
-			transition: all 0.2s ease;
-			color: #333;
-		}
-		.demo-toggle-button:hover {
-			background-color: #e8e8e8;
-		}
-		.demo-toggle-button.active {
-			background-color: #d4a373;
-			color: #fff;
-			font-weight: 600;
-		}
-		.access-description {
-			font-size: 0.85rem;
-			margin-top: 0.5rem;
-			font-style: italic;
-		}
-		@media (prefers-color-scheme: dark) {
-			.api-warning {
-				background-color: #664d03;
-				border-color: #997404;
-				color: #ffecb5;
-			}
-			.reactivate-warnings button {
-				color: #90caf9;
-			}
-			.demo-banner {
-				background-color: #664d03;
-				border: 1px solid #997404;
-				color: #ffecb5;
-				padding: 1rem;
-				text-align: center;
-			}
-			.demo-access-toggle {
-				display: flex;
-				align-items: center;
-				justify-content: center;
-				gap: 0.75rem;
-				margin-top: 1rem;
-				padding: 0.75rem;
-				background-color: #333333;
-				border-radius: 6px;
-				border: 1px solid #997404;
-			}
-		}
-	</style>
 </svelte:head>
 
 {#if isDemo}
-	<div class="demo-banner">
-		<div class="demo-banner-content">
-			<div class="demo-banner-header">Demo</div>
-			<div>
-				You are currently viewing the demo plan. This plan does not receive or send any data from
-				YNAB. All data is generated for demonstration purposes only.
-			</div>
-
-			<div class="demo-access-toggle">
-				<div aria-label="Access Type">Access Type:</div>
-
+	<div
+		class="border-b border-stone-200 bg-stone-100 py-3 text-center dark:border-stone-700 dark:bg-stone-800/50"
+	>
+		<div class="mx-auto flex max-w-xl flex-col gap-2 text-sm text-stone-600 dark:text-stone-400">
+			<span class="font-medium text-stone-800 dark:text-stone-200">Demo</span>
+			<p class="mb-2">This plan does not send or receive data from YNAB.</p>
+			<div class="flex items-center justify-center gap-2">
+				<span class="text-stone-500 dark:text-stone-500">Access:</span>
 				<button
-					class="demo-toggle-button"
-					class:active={demoAccessType === 'read-only'}
+					class="rounded border px-3 py-1.5 text-sm transition-colors {demoAccessType ===
+					'read-only'
+						? 'border-stone-700 bg-stone-700 text-white dark:bg-stone-600'
+						: 'border-stone-300 bg-transparent text-stone-600 hover:bg-stone-100 dark:border-stone-600 dark:text-stone-400 dark:hover:bg-stone-800'}"
 					onclick={switchToReadonlyDemoAccessType}
-					aria-label="Toggle to read-only access">🔒 Read-Only</button
+					aria-label="Toggle to read-only access"
 				>
-
+					Read-Only
+				</button>
 				<button
-					class="demo-toggle-button"
-					class:active={demoAccessType === 'read-and-write'}
+					class="rounded border px-3 py-1.5 text-sm transition-colors {demoAccessType ===
+					'read-and-write'
+						? 'border-stone-700 bg-stone-700 text-white dark:bg-stone-600'
+						: 'border-stone-300 bg-transparent text-stone-600 hover:bg-stone-100 dark:border-stone-600 dark:text-stone-400 dark:hover:bg-stone-800'}"
 					onclick={switchToReadAndWriteDemoAccessType}
-					aria-label="Toggle to read and write access">✏️ Read & Write</button
+					aria-label="Toggle to read and write access"
 				>
-			</div>
-
-			<div class="access-description">
-				{#if demoAccessType === 'read-only'}
-					With read-only access, you can view bills but cannot create, edit, or delete them.
-				{:else}
-					With read and write access, you can create, edit, and delete bills in YNAB.
-				{/if}
+					Read & Write
+				</button>
 			</div>
 		</div>
 	</div>
 {/if}
 
-<div class="logo"><WorksWithYnab /></div>
+{#if !loading}
+	<header class="mx-auto flex w-full max-w-2xl justify-end px-6 py-6">
+		<div class="flex flex-row items-center gap-4">
+			{#if authToken}
+				<span class="text-sm text-stone-600 dark:text-stone-400">Logged in with {accessType}.</span>
+				<button
+					type="button"
+					class="text-sm text-stone-500 underline underline-offset-2 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
+					onclick={() => {
+						sessionStorage.removeItem('ynab_access_token');
+						sessionStorage.removeItem('ynab_token_write');
+						location.reload();
+					}}
+				>
+					Log out
+				</button>
+			{:else}
+				<a
+					href={resolve('/login')}
+					class="text-sm text-stone-600 underline-offset-2 hover:text-stone-900 hover:underline dark:text-stone-400 dark:hover:text-stone-100"
+				>
+					Login
+				</a>
+			{/if}
+			{#if !demoBudgetAlreadyExists}
+				<button
+					type="button"
+					onclick={createDemoPlan}
+					disabled={demoBudgetAlreadyExists}
+					class="cursor-pointer rounded-lg border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-800 transition-colors hover:bg-stone-50 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700/50"
+				>
+					Try Demo
+				</button>
+			{:else}
+				<a
+					href={resolve('/plan/demo')}
+					class="cursor-pointer rounded-lg border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-800 transition-colors hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700/50"
+				>
+					Try Demo
+				</a>
+			{/if}
+		</div>
+	</header>
 
-<div class="referral">
-	<div class="referral-link">
-		<a
-			href="https://ynab.com/referral/?ref=5uhATdvN0mdkvJzq&sponsor_name=DanielH&utm_source=customer_referral"
-			target="_blank"
-			rel="noopener sponsored">Referral Link</a
-		>
-	</div>
+	<main class="mx-auto flex min-h-screen max-w-5xl flex-col justify-center gap-10 px-6 py-10">
+		{@render children()}
+	</main>
 
-	<small>(get 1 more month free)</small>
-</div>
-
-<div class="guide">
-	<div>Confused?</div>
-
-	<div>
-		Check out the
-
-		<a
-			href="https://github.com/danielh-official/billsforynab/blob/main/GUIDE.md"
-			target="_blank"
-			rel="noopener noreferrer">guide</a
-		>
-
-		.
-	</div>
-</div>
-
-<div class="star-section">
-	<div>Like this app? Give us a star.</div>
-
-	<a
-		class="github-button"
-		href="https://github.com/danielh-official/billsforynab"
-		data-icon="octicon-star"
-		data-size="large"
-		data-show-count="true"
-		aria-label="Star danielh-official/billsforynab on GitHub">Star</a
+	<footer
+		class="flex w-full flex-col rounded-lg border border-stone-200 bg-stone-100 px-6 py-10 text-center text-sm dark:border-stone-700 dark:bg-stone-800/50"
 	>
-</div>
-
-{#if atLeastOneNoticeDismissed}
-	<div class="reactivate-warnings">
-		<button
-			type="button"
-			onclick={() => {
-				if (browser) {
-					localStorage.removeItem('api_restriction_notice_dismissed');
-					localStorage.removeItem('api_scheduled_transactions_notice_dismissed');
-					showApiRestrictionNotice = true;
-					showApiScheduledTransactionsNotice = true;
-				}
-			}}
-			disabled={!atLeastOneNoticeDismissed}>Show Dismissed Warnings</button
-		>
-	</div>
-{/if}
-
-{#if showApiScheduledTransactionsNotice}
-	<div class="api-warning">
-		<button
-			class="close-button"
-			aria-label="Dismiss notice"
-			onclick={dismissApiScheduledTransactionsNotice}>×</button
-		>
-
-		<strong>⚠️ API Bug Notice</strong>
-		<p>
-			Due to a bug with YNAB's API, bills with the following frequencies cannot be created, updated,
-			or deleted within this interface: {unsupportedFrequencies.join(', ')}.
+		<p class="text-stone-500 dark:text-stone-400">
+			© {new Date().getFullYear()} Bills (For YNAB)
 		</p>
-
-		<p style="margin-top: 0.5rem;">
-			You will have to manage these bills directly in
-
-			<a href="https://app.ynab.com" target="_blank" rel="noopener noreferrer">YNAB</a>
+		<p
+			class="mt-3 flex flex-wrap items-center justify-center gap-4 text-stone-500 dark:text-stone-400"
+		>
+			<a
+				target="_blank"
+				rel="noopener noreferrer"
+				href="https://github.com/danielh-official/billsforynab/blob/main/GUIDE.md"
+				class="text-blue-500 hover:underline">Guide 📋</a
+			>
+			<a
+				href="https://ynab.com/referral/?ref=5uhATdvN0mdkvJzq&sponsor_name=DanielH&utm_source=customer_referral"
+				target="_blank"
+				rel="noopener sponsored"
+				class="text-blue-500 hover:underline">Referral (1 mo free) 🎁</a
+			>
+			<a
+				href="https://github.com/danielh-official/billsforynab"
+				class="text-blue-500 hover:underline"
+				target="_blank"
+				rel="noopener noreferrer">⭐ on GitHub</a
+			>
+			<a
+				target="_blank"
+				rel="noopener noreferrer"
+				href="https://github.com/danielh-official/billsforynab/blob/main/PRIVACY.md"
+				class="text-blue-500 hover:underline">Privacy Policy 🔒</a
+			>
 		</p>
-	</div>
+		<div class="mt-4 flex justify-center">
+			<WorksWithYnab />
+		</div>
+		<p class="mt-4 min-[1450px]:mx-auto min-[1450px]:max-w-xl">
+			<b class="text-gray-700 dark:text-gray-300">Statement of Affiliation</b>: We are not
+			affiliated, associated, or in any way officially connected with YNAB or any of its
+			subsidiaries or affiliates. The official YNAB website can be found at
+			<a class="app-link" href="https://www.ynab.com" target="_blank" rel="noopener noreferrer"
+				>https://www.ynab.com</a
+			>. The names YNAB and You Need A Budget, as well as related names, tradenames, marks,
+			trademarks, emblems, and images are registered trademarks of YNAB.
+		</p>
+		<p class="mx-auto max-w-2xl">
+			&copy; {new Date().getFullYear()} Bills (For YNAB).
+		</p>
+	</footer>
 {/if}
-
-<main>{@render children()}</main>
-
-<footer>
-	<p>
-		© {new Date().getFullYear()} Bills (For YNAB). Built with
-
-		<a href="https://svelte.dev" target="_blank" rel="noopener noreferrer">SvelteKit</a>
-
-		.
-		<!-- TODO: Determine favicon and add reference here if requires citation -->
-		<!-- <br />
-		<a
-			target="_blank"
-			rel="noopener noreferrer"
-			href="https://www.flaticon.com/free-icons/coin"
-			title="coin icons">Coin icons created by Ardiansyah - Flaticon</a
-		> -->
-	</p>
-
-	<p class="footer-links">
-		<a
-			target="_blank"
-			rel="noopener noreferrer"
-			href="https://github.com/danielh-official/billsforynab/blob/main/PRIVACY.md">Privacy Policy</a
-		>
-
-		<a
-			target="_blank"
-			rel="noopener noreferrer"
-			href="https://github.com/danielh-official/billsforynab">Repository</a
-		>
-	</p>
-
-	<p>
-		<b>Statement of Affiliation</b>
-		: We are not affiliated, associated, or in any way officially connected with YNAB or any of its subsidiaries
-		or affiliates. The official YNAB website can be found at
-
-		<a href="https://www.ynab.com" target="_blank" rel="noopener noreferrer">https://www.ynab.com</a
-		>
-
-		. The names YNAB and You Need A Budget, as well as related names, tradenames, marks, trademarks,
-		emblems, and images are registered trademarks of YNAB.
-	</p>
-</footer>
