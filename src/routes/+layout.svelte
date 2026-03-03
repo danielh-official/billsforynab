@@ -1,6 +1,7 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
 	import '$lib/app.css';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import WorksWithYnab from '$lib/components/WorksWithYnab.svelte';
 	import { db, type CustomBudgetDetail } from '$lib/db';
 	import { liveQuery } from 'dexie';
@@ -172,6 +173,7 @@
 					Login
 				</a>
 			{/if}
+			<ThemeToggle />
 			{#if !demoBudgetAlreadyExists}
 				<button
 					type="button"
