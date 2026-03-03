@@ -151,8 +151,8 @@
 {/if}
 
 {#if !loading}
-	<header class="mx-auto flex w-full max-w-5xl justify-end px-6 py-6">
-		<div class="flex flex-row items-center gap-4">
+	<header class="mx-auto flex w-full max-w-5xl flex-col justify-end px-6 py-6 lg:flex-row">
+		<div class="flex flex-col items-center gap-4 lg:flex-row">
 			{#if authToken}
 				<button
 					type="button"
