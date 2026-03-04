@@ -42,6 +42,17 @@ Click Save Application, and then copy the Client ID and paste it as the value fo
 
 Some changes may not show for dev. To catch these, run `bun run build` and then run `bun preview` to preview how the app would work on a Production-esque environment. You must run `bun run build` each time you make changes (unlike with `bun dev`, which auto-refreshes).
 
+## Docker
+
+Prerequisites: Docker and Docker Compose.
+
+- **Dev**: From the repo root, run `docker compose up app` (or `docker compose run --service-ports app`). Open http://localhost:5173. You still need a `.env` file (copy from `.env.example`) and a valid `PUBLIC_YNAB_CLIENT_ID` for OAuth.
+- **Build**: Build the static output with `docker compose build preview` (or `docker build --target builder .`).
+- **Production-like preview**: Run `docker compose up preview` and open http://localhost:4173 to serve the built app.
+- **E2E**: Start the preview service, then run tests against it: `docker compose up preview -d` followed by `docker compose run e2e`. Or run `docker compose up e2e` once (preview starts first, then E2E runs and exits).
+- **Optional (Netlify-style local)**: Run with the `netlify` profile: `docker compose --profile netlify up netlify` (see [Netlify CLI](https://docs.netlify.com/cli/get-started/) for setup).
+- **CI**: Build, lint, check, unit tests, and E2E run in Docker via [.github/workflows/ci-docker.yml](.github/workflows/ci-docker.yml).
+
 ---
 
 ## Important Details To Consider
