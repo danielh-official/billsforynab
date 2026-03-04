@@ -34,7 +34,10 @@
 	$effect(() => {
 		if (!browser) return;
 		const handler = (e: StorageEvent) => {
-			if (e.key === 'theme' && (e.newValue === 'system' || e.newValue === 'light' || e.newValue === 'dark')) {
+			if (
+				e.key === 'theme' &&
+				(e.newValue === 'system' || e.newValue === 'light' || e.newValue === 'dark')
+			) {
 				theme = e.newValue;
 				applyTheme();
 			}
@@ -79,8 +82,7 @@
 	</button>
 	<button
 		type="button"
-		class="rounded-r-md px-2.5 py-1.5 text-xs font-medium transition-colors {theme ===
-		'dark'
+		class="rounded-r-md px-2.5 py-1.5 text-xs font-medium transition-colors {theme === 'dark'
 			? 'bg-stone-200 text-stone-900 dark:bg-stone-600 dark:text-stone-100'
 			: 'bg-white text-stone-600 hover:bg-stone-50 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700/50'}"
 		onclick={() => setTheme('dark')}

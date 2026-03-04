@@ -4,31 +4,31 @@ services:
       context: .
       target: dev
     ports:
-      - "5173:5173"
+      - '5173:5173'
     volumes:
       - .:/app
       - app_node_modules:/app/node_modules
     env_file:
       - .env
-    command: [ "bun", "run", "dev", "--", "--host", "0.0.0.0" ]
+    command: ['bun', 'run', 'dev', '--', '--host', '0.0.0.0']
 
   preview:
     build:
       context: .
       target: preview
       args:
-        PUBLIC_ADAPTER: "static"
-        PUBLIC_BASE_PATH: "/billsforynab"
-        PUBLIC_YNAB_CLIENT_ID: ""
+        PUBLIC_ADAPTER: 'static'
+        PUBLIC_BASE_PATH: '/billsforynab'
+        PUBLIC_YNAB_CLIENT_ID: ''
     ports:
-      - "4173:4173"
+      - '4173:4173'
 
   e2e:
     build:
       context: .
       target: e2e
     environment:
-      BASE_URL: "http://preview:4173"
+      BASE_URL: 'http://preview:4173'
     depends_on:
       preview:
         condition: service_started
@@ -38,7 +38,7 @@ services:
     image: node:20-bookworm-slim
     working_dir: /app
     ports:
-      - "8888:8888"
+      - '8888:8888'
     volumes:
       - .:/app
     env_file:

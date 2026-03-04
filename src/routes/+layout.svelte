@@ -65,19 +65,6 @@
 		}
 	});
 
-	const accessType = $derived.by(() => {
-		// Get ynab_token_write value from session storage
-		if (browser) {
-			const writeToken = sessionStorage.getItem('ynab_token_write');
-			if (writeToken === 'true') {
-				return 'read and write access';
-			} else {
-				return 'read-only access';
-			}
-		}
-		return 'Unknown';
-	});
-
 	const budgets = liveQuery(() => db.budgets.orderBy('id').toArray());
 
 	function createDemoPlan() {
