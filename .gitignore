@@ -26,3 +26,4 @@ vite.config.ts.timestamp-*
 # Other
 .legacy/
 package-lock.json
+.claude/
