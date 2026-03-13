@@ -11,6 +11,16 @@ services:
     env_file:
       - .env
     command: ['bun', 'run', 'dev', '--', '--host', '0.0.0.0']
+    develop:
+      watch:
+        - action: sync
+          path: ./src
+          target: /app/src
+        - action: sync
+          path: ./static
+          target: /app/static
+        - action: rebuild
+          path: package.json
 
   preview:
     build:
