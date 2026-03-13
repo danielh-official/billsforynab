@@ -214,7 +214,7 @@
 	}}
 />
 
-<main class="flex w-full flex-col items-center gap-8">
+<div class="flex w-full flex-col items-center gap-8">
 	{#if budgetId}
 		<div class="w-full">
 			<a
@@ -263,7 +263,8 @@
 		</div>
 
 		<!-- MARK: - Stats -->
-		<div
+		<section
+			aria-label="Bill totals"
 			class="sticky top-2 z-10 mb-4 flex w-full flex-wrap gap-6 rounded-lg border-b border-stone-200 bg-stone-50 px-4 py-4 shadow-sm lg:top-0 dark:border-stone-700 dark:bg-stone-900/50"
 		>
 			<p class="text-sm text-stone-600 dark:text-stone-400">
@@ -285,7 +286,7 @@
 					>{bills.filter((bill) => bill.excluded).length}</strong
 				>
 			</p>
-		</div>
+		</section>
 		<!-- MARK: - Bills -->
 		{#if bills.length === 0}
 			<div
@@ -304,9 +305,12 @@
 				{/if}
 			</div>
 		{:else}
-			<div class="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+			<ul
+				class="m-0 grid w-full list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+				aria-label="Bills"
+			>
 				{#each bills as bill (bill.id)}
-					<div
+					<li
 						class="relative rounded-lg border p-4 transition-all {bill.excluded
 							? 'bg-stone-100 opacity-50 dark:bg-stone-800/50'
 							: 'border-stone-200 bg-white dark:border-stone-700 dark:bg-stone-800'} {!bill.published
@@ -385,9 +389,9 @@
 								<p class="mt-1 text-xs text-stone-500 dark:text-stone-400">{bill.memo}</p>
 							{/if}
 						</div>
-					</div>
+					</li>
 				{/each}
-			</div>
+			</ul>
 		{/if}
 	{/if}
-</main>
+</div>

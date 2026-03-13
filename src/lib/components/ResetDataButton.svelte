@@ -51,7 +51,9 @@
 
 <button
 	class="rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700/50"
+	type="button"
 	disabled={resettingData}
+	aria-busy={resettingData}
 	onclick={resetDataForBudget}
 	data-tooltip="Delete all locally stored scheduled transactions for this plan and reset server knowledge"
 >

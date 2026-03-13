@@ -51,7 +51,7 @@
 
 <div class="mx-auto flex w-full max-w-sm flex-col items-center gap-8">
 	<h1 class="text-lg font-medium text-stone-800 dark:text-stone-200">Login with YNAB</h1>
-	<p class="text-center text-sm text-stone-500 dark:text-stone-400">
+	<p id="login-recommendation" class="text-center text-sm text-stone-500 dark:text-stone-400">
 		Read-only is recommended for most users.
 	</p>
 	<div class="flex w-full flex-col gap-3">
@@ -59,17 +59,21 @@
 			data-sveltekit-reload
 			href={readonlyAuthUrl}
 			data-tooltip="Import your YNAB data without write access."
+			aria-describedby="readonly-desc"
 			class="block w-full rounded-lg border border-stone-300 bg-stone-800 px-5 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-stone-700 dark:border-stone-600 dark:bg-stone-700 dark:hover:bg-stone-600"
 		>
 			Read-Only
 		</a>
+		<p id="readonly-desc" class="sr-only">Import your YNAB data without write access.</p>
 		<a
 			data-sveltekit-reload
 			href={writeAllowedAuthUrl}
 			data-tooltip="Create, edit, and delete bills and sync to YNAB."
+			aria-describedby="readwrite-desc"
 			class="block w-full rounded-lg border border-stone-300 bg-white px-5 py-2.5 text-center text-sm font-medium text-stone-800 transition-colors hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700/50"
 		>
 			Read and Write
 		</a>
+		<p id="readwrite-desc" class="sr-only">Create, edit, and delete bills and sync to YNAB.</p>
 	</div>
 </div>

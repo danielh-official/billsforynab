@@ -132,12 +132,14 @@
 						<div class="flex shrink-0 gap-3 text-sm">
 							<a
 								href={resolve(`/plan/${budget.id}`)}
+								aria-label="View {budget.name}"
 								class="text-stone-600 hover:underline dark:text-stone-400">View</a
 							>
 							<button
 								type="button"
 								class="cursor-pointer text-stone-500 hover:text-red-600 hover:underline dark:text-stone-400 dark:hover:text-red-400"
 								onclick={() => deleteBudget(budget.id)}
+								aria-label="Delete {budget.name}"
 							>
 								Delete
 							</button>

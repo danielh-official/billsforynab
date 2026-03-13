@@ -410,7 +410,7 @@
 	onkeydown={(e: KeyboardEvent) => e.key === 'Escape' && goto(resolve(`/plan/${budgetId}`))}
 />
 
-<main class="mx-auto flex w-full max-w-xl flex-col gap-8 px-6 py-10">
+<div class="mx-auto flex w-full max-w-xl flex-col gap-8 px-6 py-10">
 	{#if budgetId && billId}
 		<div>
 			<a
@@ -600,4 +600,4 @@
 			</form>
 		{/if}
 	{/if}
-</main>
+</div>

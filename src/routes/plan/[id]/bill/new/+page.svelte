@@ -324,7 +324,7 @@
 	onkeydown={(e: KeyboardEvent) => e.key === 'Escape' && goto(resolve(`/plan/${budgetId}`))}
 />
 
-<main class="mx-auto flex w-full max-w-xl flex-col gap-8 px-6 py-10">
+<div class="mx-auto flex w-full max-w-xl flex-col gap-8 px-6 py-10">
 	{#if budgetId}
 		<div>
 			<a
@@ -448,7 +448,8 @@
 							class="mt-1 cursor-help text-stone-600 dark:text-stone-400"
 							data-tooltip="Note: Due to a bug with YNAB's API, some frequencies may not be editable when updating an existing bill. These include: {unsupportedFrequencies.join(
 								', '
-							)}.">What about other frequencies?</small
+							)}."
+							title="Note: Due to a bug with YNAB's API, some frequencies may not be editable when updating an existing bill. These include: {unsupportedFrequencies.join(', ')}.">What about other frequencies?</small
 						>
 					</label>
 				</div>
@@ -479,4 +480,4 @@
 			</form>
 		{/if}
 	{/if}
-</main>
+</div>

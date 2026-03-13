@@ -106,19 +106,21 @@
 {#if isDemo}
 	<div
 		class="border-b border-stone-200 bg-stone-100 py-3 text-center dark:border-stone-700 dark:bg-stone-800/50"
+		role="region"
+		aria-label="Demo mode banner"
 	>
 		<div class="mx-auto flex max-w-xl flex-col gap-2 text-sm text-stone-600 dark:text-stone-400">
 			<span class="font-medium text-stone-800 dark:text-stone-200">Demo</span>
 			<p class="mb-2">This plan does not send or receive data from YNAB.</p>
-			<div class="flex items-center justify-center gap-2">
-				<span class="text-stone-500 dark:text-stone-500">Access:</span>
+			<div class="flex items-center justify-center gap-2" role="group" aria-label="Demo access type">
+				<span class="text-stone-500 dark:text-stone-500" id="demo-access-label">Access:</span>
 				<button
 					class="rounded border px-3 py-1.5 text-sm transition-colors {demoAccessType ===
 					'read-only'
 						? 'border-stone-700 bg-stone-700 text-white dark:bg-stone-600'
 						: 'border-stone-300 bg-transparent text-stone-600 hover:bg-stone-100 dark:border-stone-600 dark:text-stone-400 dark:hover:bg-stone-800'}"
 					onclick={switchToReadonlyDemoAccessType}
-					aria-label="Toggle to read-only access"
+					aria-pressed={demoAccessType === 'read-only'}
 				>
 					Read-Only
 				</button>
@@ -128,7 +130,7 @@
 						? 'border-stone-700 bg-stone-700 text-white dark:bg-stone-600'
 						: 'border-stone-300 bg-transparent text-stone-600 hover:bg-stone-100 dark:border-stone-600 dark:text-stone-400 dark:hover:bg-stone-800'}"
 					onclick={switchToReadAndWriteDemoAccessType}
-					aria-label="Toggle to read and write access"
+					aria-pressed={demoAccessType === 'read-and-write'}
 				>
 					Read & Write
 				</button>
@@ -139,7 +141,7 @@
 
 {#if !loading}
 	<header class="mx-auto flex w-full max-w-5xl flex-col justify-end px-6 py-6 lg:flex-row">
-		<div class="flex flex-col items-center gap-4 lg:flex-row">
+		<nav class="flex flex-col items-center gap-4 lg:flex-row" aria-label="Site navigation">
 			<ThemeToggle />
 			{#if !demoBudgetAlreadyExists}
 				<button
@@ -178,7 +180,7 @@
 					Login
 				</a>
 			{/if}
-		</div>
+		</nav>
 	</header>
 
 	<main class="mx-auto flex min-h-screen max-w-5xl flex-col justify-center gap-10 px-6 py-10">
@@ -198,25 +200,29 @@
 				target="_blank"
 				rel="noopener noreferrer"
 				href="https://github.com/danielh-official/billsforynab/blob/main/GUIDE.md"
-				class="text-blue-500 hover:underline">Guide 📋</a
+				class="text-blue-500 hover:underline"
+				>Guide <span aria-hidden="true">📋</span></a
 			>
 			<a
 				href="https://ynab.com/referral/?ref=5uhATdvN0mdkvJzq&sponsor_name=DanielH&utm_source=customer_referral"
 				target="_blank"
 				rel="noopener sponsored"
-				class="text-blue-500 hover:underline">Referral (1 mo free) 🎁</a
+				class="text-blue-500 hover:underline"
+				>Referral (1 mo free) <span aria-hidden="true">🎁</span></a
 			>
 			<a
 				href="https://github.com/danielh-official/billsforynab"
 				class="text-blue-500 hover:underline"
 				target="_blank"
-				rel="noopener noreferrer">⭐ on GitHub</a
+				rel="noopener noreferrer"
+				><span aria-hidden="true">⭐</span> on GitHub</a
 			>
 			<a
 				target="_blank"
 				rel="noopener noreferrer"
 				href="https://github.com/danielh-official/billsforynab/blob/main/PRIVACY.md"
-				class="text-blue-500 hover:underline">Privacy Policy 🔒</a
+				class="text-blue-500 hover:underline"
+				>Privacy Policy <span aria-hidden="true">🔒</span></a
 			>
 		</p>
 		<div class="mt-4 flex justify-center">
