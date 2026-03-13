@@ -36,7 +36,8 @@ CMD ["bun", "run", "preview", "--", "--host", "0.0.0.0"]
 # e2e: Playwright + app deps; runs tests against preview service (BASE_URL set at runtime)
 FROM mcr.microsoft.com/playwright:v1.49.0-noble AS e2e
 WORKDIR /app
-RUN curl -fsSL https://bun.sh/install | bash && \
+RUN apt-get update && apt-get install -y unzip && rm -rf /var/lib/apt/lists/* && \
+    curl -fsSL https://bun.sh/install | bash && \
     ln -s /root/.bun/bin/bun /usr/local/bin/bun
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
