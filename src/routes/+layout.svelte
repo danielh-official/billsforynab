@@ -140,26 +140,6 @@
 {#if !loading}
 	<header class="mx-auto flex w-full max-w-5xl flex-col justify-end px-6 py-6 lg:flex-row">
 		<div class="flex flex-col items-center gap-4 lg:flex-row">
-			{#if authToken}
-				<button
-					type="button"
-					class="text-sm text-stone-500 underline underline-offset-2 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
-					onclick={() => {
-						sessionStorage.removeItem('ynab_access_token');
-						sessionStorage.removeItem('ynab_token_write');
-						location.reload();
-					}}
-				>
-					Log out
-				</button>
-			{:else}
-				<a
-					href={resolve('/login')}
-					class="text-sm text-stone-600 underline-offset-2 hover:text-stone-900 hover:underline dark:text-stone-400 dark:hover:text-stone-100"
-				>
-					Login
-				</a>
-			{/if}
 			<ThemeToggle />
 			{#if !demoBudgetAlreadyExists}
 				<button
@@ -176,6 +156,26 @@
 					class="cursor-pointer rounded-lg border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-800 transition-colors hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700/50"
 				>
 					Try Demo
+				</a>
+			{/if}
+			{#if authToken}
+				<button
+					type="button"
+					class="cursor-pointer rounded-lg border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-800 transition-colors hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700/50"
+					onclick={() => {
+						sessionStorage.removeItem('ynab_access_token');
+						sessionStorage.removeItem('ynab_token_write');
+						location.reload();
+					}}
+				>
+					Log out
+				</button>
+			{:else}
+				<a
+					href={resolve('/login')}
+					class="cursor-pointer rounded-lg border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-800 transition-colors hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700/50"
+				>
+					Login
 				</a>
 			{/if}
 		</div>
