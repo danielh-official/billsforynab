@@ -99,8 +99,6 @@
 	/>
 
 	<link rel="icon" href={favicon} />
-
-	<script async defer src="https://buttons.github.io/buttons.js"></script>
 </svelte:head>
 
 {#if isDemo}
