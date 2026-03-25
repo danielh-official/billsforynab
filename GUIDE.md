@@ -42,7 +42,6 @@ If you're unable to log in due to the API restriction, follow these steps to run
 
    ```
    PUBLIC_ADAPTER='static'
-   PUBLIC_BASE_PATH=''
    PUBLIC_YNAB_CLIENT_ID='your-client-id-from-step-3'
    ```
 

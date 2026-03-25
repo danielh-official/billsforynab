@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { page } from '$app/state';
 	import { browser } from '$app/environment';
-	import { PUBLIC_BASE_PATH, PUBLIC_YNAB_CLIENT_ID } from '$env/dynamic/public';
+	import { env } from '$env/dynamic/public';
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 
 	$effect(() => {
 		const accessToken = sessionStorage.getItem('ynab_access_token');
@@ -15,15 +15,15 @@
 
 	let currentUrl = $derived.by(() => {
 		if (browser) {
-			return page.url.origin + (PUBLIC_BASE_PATH ?? '/');
+			return page.url.origin;
 		}
 		return '';
 	});
 
 	let readonlyAuthUrl = $derived.by(() => {
 		const clientId =
-			PUBLIC_YNAB_CLIENT_ID.trim().length > 0
-				? PUBLIC_YNAB_CLIENT_ID
+			env.PUBLIC_YNAB_CLIENT_ID.trim().length > 0
+				? env.PUBLIC_YNAB_CLIENT_ID
 				: 'pSUArM_scyhWolG84x64phZCixdv4rDXkyr3JpzoN34';
 		const redirectUri = `${currentUrl}/callback`;
 		return `https://app.ynab.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=read-only`;
@@ -31,8 +31,8 @@
 
 	let writeAllowedAuthUrl = $derived.by(() => {
 		const clientId =
-			PUBLIC_YNAB_CLIENT_ID.trim().length > 0
-				? PUBLIC_YNAB_CLIENT_ID
+			env.PUBLIC_YNAB_CLIENT_ID.trim().length > 0
+				? env.PUBLIC_YNAB_CLIENT_ID
 				: 'pSUArM_scyhWolG84x64phZCixdv4rDXkyr3JpzoN34';
 		const redirectUri = `${currentUrl}/callback/write`;
 		return `https://app.ynab.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token`;
@@ -45,7 +45,7 @@
 
 <a
 	href={resolve('/')}
-	class="text-sm text-stone-500 underline-offset-2 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
+	class="text-sm text-stone-500 underline-offset-2 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200 text-center"
 	>&larr; Back to Home</a
 >
 

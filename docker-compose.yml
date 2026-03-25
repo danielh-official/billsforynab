@@ -28,7 +28,6 @@ services:
       target: preview
       args:
         PUBLIC_ADAPTER: 'static'
-        PUBLIC_BASE_PATH: '/billsforynab'
         PUBLIC_YNAB_CLIENT_ID: ''
     ports:
       - '4173:4173'

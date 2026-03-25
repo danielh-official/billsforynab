@@ -26,7 +26,6 @@ You should see this .env:
 
 ```
 PUBLIC_ADAPTER='static'
-PUBLIC_BASE_PATH='/billsforynab'
 PUBLIC_YNAB_CLIENT_ID='your-ynab-client-id-here'
 ```
 

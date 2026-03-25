@@ -9,7 +9,6 @@ on:
 
 env:
   PUBLIC_ADAPTER: static
-  PUBLIC_BASE_PATH: /billsforynab
   PUBLIC_YNAB_CLIENT_ID: ''
 
 jobs:
@@ -31,7 +30,6 @@ jobs:
           tags: builder:latest
           build-args: |
             PUBLIC_ADAPTER=${{ env.PUBLIC_ADAPTER }}
-            PUBLIC_BASE_PATH=${{ env.PUBLIC_BASE_PATH }}
             PUBLIC_YNAB_CLIENT_ID=${{ env.PUBLIC_YNAB_CLIENT_ID }}
 
       - name: Run lint
