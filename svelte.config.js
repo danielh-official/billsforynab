@@ -29,7 +29,7 @@ function getAdapter() {
 }
 
 function getBasePath() {
-	return process.env.PUBLIC_BASE_PATH || '';
+	return process.env?.PUBLIC_BASE_PATH ?? '';
 }
 
 /** @type {import('@sveltejs/kit').Config} */
