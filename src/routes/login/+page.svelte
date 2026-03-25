@@ -25,7 +25,7 @@
 			env.PUBLIC_YNAB_CLIENT_ID.trim().length > 0
 				? env.PUBLIC_YNAB_CLIENT_ID
 				: 'pSUArM_scyhWolG84x64phZCixdv4rDXkyr3JpzoN34';
-		const redirectUri = `${currentUrl}/callback`;
+		const redirectUri = encodeURI(`${currentUrl}/callback`);
 		return `https://app.ynab.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=read-only`;
 	});
 
@@ -34,7 +34,7 @@
 			env.PUBLIC_YNAB_CLIENT_ID.trim().length > 0
 				? env.PUBLIC_YNAB_CLIENT_ID
 				: 'pSUArM_scyhWolG84x64phZCixdv4rDXkyr3JpzoN34';
-		const redirectUri = `${currentUrl}/callback/write`;
+		const redirectUri = encodeURI(`${currentUrl}/callback/write`);
 		return `https://app.ynab.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token`;
 	});
 </script>
