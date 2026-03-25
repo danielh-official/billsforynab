@@ -96,6 +96,11 @@
 	type SortPreset = 'monthly_amount_desc' | 'date_next_asc';
 	let sortPreset = $state<SortPreset>('date_next_asc');
 
+	// MARK: - Layout preset with localStorage persistence
+
+	type LayoutPreset = 'grid' | 'list';
+	let layoutPreset = $state<LayoutPreset>('grid');
+
 	// MARK: - Loading state for async bill operations
 
 	let billsBeingSynced = new SvelteSet<string>();
@@ -117,6 +122,21 @@
 		if (!browser) return;
 		if (typeof localStorage === 'undefined') return;
 		localStorage.setItem('sort_preset', sortPreset);
+	});
+
+	$effect(() => {
+		if (!browser) return;
+		if (typeof localStorage === 'undefined') return;
+		const stored = localStorage.getItem('layout_preset');
+		if (stored === 'grid' || stored === 'list') {
+			layoutPreset = stored;
+		}
+	});
+
+	$effect(() => {
+		if (!browser) return;
+		if (typeof localStorage === 'undefined') return;
+		localStorage.setItem('layout_preset', layoutPreset);
 	});
 
 	// MARK: - Bills list with live updates from IndexedDB
@@ -260,6 +280,38 @@
 				<option value="monthly_amount_desc">Monthly Amount (Descending)</option>
 				<option value="date_next_asc">Next Due Date (Ascending)</option>
 			</select>
+			<div
+				class="flex rounded-lg border border-stone-300 dark:border-stone-600"
+				role="group"
+				aria-label="Layout"
+			>
+				<button
+					type="button"
+					class="rounded-l-md border-r border-stone-300 px-2.5 py-1.5 text-xs font-medium transition-colors dark:border-stone-600 {layoutPreset ===
+					'grid'
+						? 'bg-stone-200 text-stone-900 dark:bg-stone-600 dark:text-stone-100'
+						: 'bg-white text-stone-600 hover:bg-stone-50 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700/50'}"
+					onclick={() => {
+						layoutPreset = 'grid';
+					}}
+					aria-pressed={layoutPreset === 'grid'}
+				>
+					Grid
+				</button>
+				<button
+					type="button"
+					class="rounded-r-md px-2.5 py-1.5 text-xs font-medium transition-colors {layoutPreset ===
+					'list'
+						? 'bg-stone-200 text-stone-900 dark:bg-stone-600 dark:text-stone-100'
+						: 'bg-white text-stone-600 hover:bg-stone-50 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700/50'}"
+					onclick={() => {
+						layoutPreset = 'list';
+					}}
+					aria-pressed={layoutPreset === 'list'}
+				>
+					List
+				</button>
+			</div>
 		</div>
 
 		<!-- MARK: - Stats -->
@@ -304,7 +356,7 @@
 					<FetchDataButton currentBudget={$currentBudget} {isDemo} />
 				{/if}
 			</div>
-		{:else}
+		{:else if layoutPreset === 'grid'}
 			<ul
 				class="m-0 grid w-full list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
 				aria-label="Bills"
@@ -387,6 +439,86 @@
 							</ul>
 							{#if bill.memo}
 								<p class="mt-1 text-xs text-stone-500 dark:text-stone-400">{bill.memo}</p>
+							{/if}
+						</div>
+					</li>
+				{/each}
+			</ul>
+		{:else}
+			<ul
+				class="m-0 w-full list-none divide-y divide-stone-200 rounded-lg border border-stone-200 p-0 dark:divide-stone-700 dark:border-stone-700"
+				aria-label="Bills"
+			>
+				{#each bills as bill (bill.id)}
+					<li
+						class="relative flex items-center gap-3 px-3 py-2 transition-all first:rounded-t-lg last:rounded-b-lg {bill.excluded
+							? 'bg-stone-100 opacity-50 dark:bg-stone-800/50'
+							: 'bg-white dark:bg-stone-800'} {!bill.published
+							? 'border-l-2 border-l-amber-400 dark:border-l-amber-600'
+							: ''}"
+					>
+						{#if !bill.published}
+							<span
+								class="shrink-0 rounded bg-amber-500 px-1.5 py-0.5 text-xs font-semibold text-white"
+							>
+								DRAFT
+							</span>
+						{/if}
+						{#if billsBeingSynced.has(bill.id)}
+							<span
+								class="shrink-0 rounded bg-stone-700 px-1.5 py-0.5 text-xs font-medium text-white"
+							>
+								Syncing…
+							</span>
+						{/if}
+						<div class="min-w-0 flex-1 text-sm">
+							<span class="font-medium text-stone-900 dark:text-stone-100"
+								>{bill.payee_name ?? 'unspecified payee'}</span
+							>
+							<div class="my-2 text-stone-700 dark:text-stone-300">
+								{determineAmountStringFromBudgetCurrency(
+									-(bill.monthly_amount ?? bill.amount * getFrequencyMultiplier(bill.frequency)),
+									$currentBudget
+								)}<span class="text-stone-500 dark:text-stone-400">/mo</span>
+							</div>
+							<div class="text-stone-500 dark:text-stone-400">
+								{determineAmountStringFromBudgetCurrency(-bill.amount, $currentBudget)}
+								<ParsedFrequency {bill} />
+							</div>
+							<div class="mt-4 text-stone-500 dark:text-stone-400"><BillDueDate {bill} /></div>
+						</div>
+						<div
+							class="hidden shrink-0 text-right text-xs text-stone-500 sm:block dark:text-stone-400"
+						>
+							<p>{bill.category_name}</p>
+							<p>{bill.account_name}</p>
+						</div>
+						<div class="flex shrink-0 items-center gap-1">
+							<ToggleBillInclusionButton {bill} />
+							{#if effectiveWriteAccess}
+								<a
+									href={resolve(`/plan/${budgetId}/bill/${bill.id}`)}
+									class="rounded border border-stone-300 bg-white p-1.5 text-sm text-stone-700 hover:bg-stone-100 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700 {billsBeingSynced.has(
+										bill.id
+									)
+										? 'pointer-events-none opacity-50'
+										: ''}"
+									data-tooltip="Edit this bill"
+									aria-label="Edit bill"
+								>
+									✏️
+								</a>
+								<DeleteBillButton {bill} {isDemo} {billsBeingSynced} {budgetId} />
+								{#if !bill.published}
+									<PublishDraftBillButton
+										budget={$currentBudget}
+										{bill}
+										{isDemo}
+										{billsBeingSynced}
+										{availableAccounts}
+										categoryGroups={$categoryGroups}
+									/>
+								{/if}
 							{/if}
 						</div>
 					</li>
