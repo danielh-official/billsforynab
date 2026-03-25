@@ -20,5 +20,34 @@
 	data-tooltip={bill.excluded ? 'Excluded from calculations' : 'Included in calculations'}
 	aria-label={bill.excluded ? 'Include bill' : 'Exclude bill'}
 >
-	{bill.excluded ? '👁️' : '✓'}
+	{#if bill.excluded}
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			width="16"
+			height="16"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		>
+			<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+			<circle cx="12" cy="12" r="3"></circle>
+		</svg>
+	{:else}
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			width="16"
+			height="16"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		>
+			<polyline points="20 6 9 17 4 12"></polyline>
+		</svg>
+	{/if}
 </button>

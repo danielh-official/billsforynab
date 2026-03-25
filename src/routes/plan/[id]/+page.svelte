@@ -17,6 +17,7 @@
 	import ParsedFrequency from '$lib/components/ParsedFrequency.svelte';
 	import FirstPaidDate from '$lib/components/FirstPaidDate.svelte';
 	import { determineAmountStringFromBudgetCurrency, getFrequencyMultiplier } from '$lib';
+	import EditBillLink from '$lib/components/EditBillLink.svelte';
 
 	// MARK: - Mount and budgetId extraction
 
@@ -357,6 +358,7 @@
 				{/if}
 			</div>
 		{:else if layoutPreset === 'grid'}
+			<!-- MARK: Grid View -->
 			<ul
 				class="m-0 grid w-full list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
 				aria-label="Bills"
@@ -372,18 +374,7 @@
 						<div class="mb-2 flex justify-end gap-2">
 							<ToggleBillInclusionButton {bill} />
 							{#if effectiveWriteAccess}
-								<a
-									href={resolve(`/plan/${budgetId}/bill/${bill.id}`)}
-									class="rounded border border-stone-300 bg-white p-1.5 text-sm text-stone-700 hover:bg-stone-100 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700 {billsBeingSynced.has(
-										bill.id
-									)
-										? 'pointer-events-none opacity-50'
-										: ''}"
-									data-tooltip="Edit this bill"
-									aria-label="Edit bill"
-								>
-									✏️
-								</a>
+								<EditBillLink {bill} {billsBeingSynced} {budgetId} />
 								<DeleteBillButton {bill} {isDemo} {billsBeingSynced} {budgetId} />
 								{#if !bill.published}
 									<PublishDraftBillButton
@@ -445,6 +436,7 @@
 				{/each}
 			</ul>
 		{:else}
+			<!-- MARK: List View -->
 			<ul
 				class="m-0 w-full list-none divide-y divide-stone-200 rounded-lg border border-stone-200 p-0 dark:divide-stone-700 dark:border-stone-700"
 				aria-label="Bills"
@@ -496,18 +488,7 @@
 						<div class="flex shrink-0 items-center gap-1">
 							<ToggleBillInclusionButton {bill} />
 							{#if effectiveWriteAccess}
-								<a
-									href={resolve(`/plan/${budgetId}/bill/${bill.id}`)}
-									class="rounded border border-stone-300 bg-white p-1.5 text-sm text-stone-700 hover:bg-stone-100 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700 {billsBeingSynced.has(
-										bill.id
-									)
-										? 'pointer-events-none opacity-50'
-										: ''}"
-									data-tooltip="Edit this bill"
-									aria-label="Edit bill"
-								>
-									✏️
-								</a>
+								<EditBillLink {bill} {billsBeingSynced} {budgetId} />
 								<DeleteBillButton {bill} {isDemo} {billsBeingSynced} {budgetId} />
 								{#if !bill.published}
 									<PublishDraftBillButton
