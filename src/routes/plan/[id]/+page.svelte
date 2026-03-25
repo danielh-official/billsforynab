@@ -346,16 +346,6 @@
 				class="w-full rounded-lg border border-dashed border-stone-200 bg-stone-100 py-12 text-center dark:border-stone-700 dark:bg-stone-800/30"
 			>
 				<p class="mb-4 text-stone-600 dark:text-stone-400">No bills found.</p>
-				{#if effectiveWriteAccess}
-					<a
-						href={resolve(`/plan/${budgetId}/bill/new`)}
-						class="rounded-lg bg-stone-800 px-4 py-2 font-medium text-white hover:bg-stone-700 dark:bg-stone-700 dark:hover:bg-stone-600"
-					>
-						Create Bill
-					</a>
-				{:else}
-					<FetchDataButton currentBudget={$currentBudget} {isDemo} />
-				{/if}
 			</div>
 		{:else if layoutPreset === 'grid'}
 			<!-- MARK: Grid View -->
