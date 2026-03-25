@@ -199,28 +199,28 @@
 				rel="noopener noreferrer"
 				href="https://github.com/danielh-official/billsforynab/blob/main/GUIDE.md"
 				class="text-blue-500 hover:underline"
-				>Guide <span aria-hidden="true">📋</span></a
+				>Guide</a
 			>
 			<a
 				href="https://ynab.com/referral/?ref=5uhATdvN0mdkvJzq&sponsor_name=DanielH&utm_source=customer_referral"
 				target="_blank"
 				rel="noopener sponsored"
 				class="text-blue-500 hover:underline"
-				>Referral (1 mo free) <span aria-hidden="true">🎁</span></a
+				>Referral (1 mo free)</a
 			>
 			<a
 				href="https://github.com/danielh-official/billsforynab"
 				class="text-blue-500 hover:underline"
 				target="_blank"
 				rel="noopener noreferrer"
-				><span aria-hidden="true">⭐</span> on GitHub</a
+				>GitHub</a
 			>
 			<a
 				target="_blank"
 				rel="noopener noreferrer"
 				href="https://github.com/danielh-official/billsforynab/blob/main/PRIVACY.md"
 				class="text-blue-500 hover:underline"
-				>Privacy Policy <span aria-hidden="true">🔒</span></a
+				>Privacy Policy</a
 			>
 		</p>
 		<div class="mt-4 flex justify-center">
