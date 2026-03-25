@@ -29,7 +29,9 @@ function getAdapter() {
 }
 
 function getBasePath() {
-	return process.env?.PUBLIC_BASE_PATH ?? '';
+	const base = process.env?.PUBLIC_BASE_PATH ?? '';
+	// Strip surrounding quotes that some CI environments (e.g. Vercel) may include
+	return base.replace(/^['"]|['"]$/g, '');
 }
 
 /** @type {import('@sveltejs/kit').Config} */
