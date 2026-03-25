@@ -42,7 +42,7 @@ const config = {
 			directives: {
 				'img-src': ["'self'", 'data:']
 			}
-		},
+		}
 	}
 };
 

@@ -45,7 +45,7 @@
 
 <a
 	href={resolve('/')}
-	class="text-sm text-stone-500 underline-offset-2 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200 text-center"
+	class="text-center text-sm text-stone-500 underline-offset-2 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
 	>&larr; Back to Home</a
 >
 

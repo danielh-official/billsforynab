@@ -1,4 +1,12 @@
-<svg width="196" height="78" viewBox="0 0 196 78" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ynab-badge-title">
+<svg
+	width="196"
+	height="78"
+	viewBox="0 0 196 78"
+	fill="none"
+	xmlns="http://www.w3.org/2000/svg"
+	role="img"
+	aria-labelledby="ynab-badge-title"
+>
 	<title id="ynab-badge-title">Works with YNAB</title>
 	<rect width="196" height="78" rx="12" fill="#8E8E93" />
 	<g clip-path="url(#clip0)">

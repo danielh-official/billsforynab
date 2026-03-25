@@ -449,7 +449,9 @@
 							data-tooltip="Note: Due to a bug with YNAB's API, some frequencies may not be editable when updating an existing bill. These include: {unsupportedFrequencies.join(
 								', '
 							)}."
-							title="Note: Due to a bug with YNAB's API, some frequencies may not be editable when updating an existing bill. These include: {unsupportedFrequencies.join(', ')}.">What about other frequencies?</small
+							title="Note: Due to a bug with YNAB's API, some frequencies may not be editable when updating an existing bill. These include: {unsupportedFrequencies.join(
+								', '
+							)}.">What about other frequencies?</small
 						>
 					</label>
 				</div>
