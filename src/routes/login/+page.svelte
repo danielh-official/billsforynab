@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { browser } from '$app/environment';
-	import { PUBLIC_BASE_PATH, PUBLIC_YNAB_CLIENT_ID } from '$env/static/public';
+	import { PUBLIC_BASE_PATH, PUBLIC_YNAB_CLIENT_ID } from '$env/dynamic/public';
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
 
@@ -15,7 +15,7 @@
 
 	let currentUrl = $derived.by(() => {
 		if (browser) {
-			return page.url.origin + PUBLIC_BASE_PATH;
+			return page.url.origin + (PUBLIC_BASE_PATH ?? '/');
 		}
 		return '';
 	});
