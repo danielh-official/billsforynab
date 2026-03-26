@@ -324,7 +324,7 @@
 	onkeydown={(e: KeyboardEvent) => e.key === 'Escape' && goto(resolve(`/plan/${budgetId}`))}
 />
 
-<div class="mx-auto flex w-full max-w-xl flex-col gap-8 px-6 py-10">
+<div class="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-10">
 	{#if budgetId}
 		<div>
 			<a
@@ -358,7 +358,7 @@
 			</div>
 		{:else}
 			<form class="flex flex-col gap-4" onsubmit={(e: Event) => e.preventDefault()}>
-				<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+				<div class="grid grid-cols-1 gap-3">
 					<label class="flex flex-col gap-1 text-sm text-stone-700 dark:text-stone-300">
 						Account*
 						<select
