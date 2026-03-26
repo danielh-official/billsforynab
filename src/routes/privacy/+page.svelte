@@ -18,5 +18,6 @@
 </div>
 
 <div class="mx-auto prose max-w-5xl px-4 py-8 dark:prose-invert">
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 	{@html data.content}
 </div>
