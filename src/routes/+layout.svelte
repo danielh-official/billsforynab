@@ -149,7 +149,7 @@
 {#if !loading}
 	<header>
 		<nav
-			class="mx-auto flex max-w-5xl items-center justify-between p-5"
+			class="mx-auto flex max-w-7xl items-center justify-between p-5"
 			aria-label="Site navigation"
 		>
 			<div class="flex">
@@ -200,7 +200,7 @@
 		</nav>
 	</header>
 
-	<main class="mx-auto flex min-h-screen max-w-5xl flex-col justify-center gap-10 px-6 py-10">
+	<main class="mx-auto flex min-h-screen max-w-7xl flex-col justify-center gap-10 px-6 py-10">
 		{@render children()}
 	</main>
 

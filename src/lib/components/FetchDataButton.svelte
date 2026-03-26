@@ -3,7 +3,9 @@
 		ScheduledTransactionFrequency,
 		type ScheduledTransactionDetail,
 		type ScheduledTransactionsResponse,
-		type CategoriesResponse
+		type CategoriesResponse,
+		type TransactionDetail,
+		type TransactionsResponse
 	} from 'ynab/dist/models';
 	import { db } from '$lib/db';
 	import type {
@@ -11,7 +13,7 @@
 		CustomCategoryGroupWithCategories,
 		CustomScheduledTransactionDetail
 	} from '$lib/db';
-	import { createFakeDataForDemo } from '$lib';
+	import { assignHistoricalTransactionsToScheduledTransactions, createFakeDataForDemo } from '$lib';
 
 	let {
 		currentBudget,
@@ -38,6 +40,12 @@
 			return;
 		}
 
+		if (!currentBudget) {
+			alert('Budget is missing.');
+			fetchingData = false;
+			return;
+		}
+
 		// MARK: - Demo budget handling
 
 		if (isDemo) {
@@ -50,7 +58,6 @@
 		}
 
 		// MARK: - Fetch scheduled transactions
-
 		let endpoint = `https://api.ynab.com/v1/budgets/${budgetId}/scheduled_transactions`;
 
 		// Get last knowledge of server
@@ -99,6 +106,7 @@
 			scheduledTransactionsResponseJson.data.server_knowledge;
 
 		const existingCategoriesServerKnowledge = currentBudget?.server_knowledge?.category_groups || 0;
+		const existingTransactionsServerKnowledge = currentBudget?.server_knowledge?.transactions || 0;
 
 		// MARK: - Update budget
 		// Do this even though we don't have server knowledge for category groups yet,
@@ -106,13 +114,64 @@
 		await db.budgets.update(budgetId, {
 			server_knowledge: {
 				scheduled_transactions: newScheduledTransactionsServerKnowledge,
-				category_groups: existingCategoriesServerKnowledge
+				category_groups: existingCategoriesServerKnowledge,
+				transactions: existingTransactionsServerKnowledge
+			},
+			last_fetched: new Date()
+		});
+
+		await db.budgets.update(budgetId, {
+			server_knowledge: {
+				scheduled_transactions: newScheduledTransactionsServerKnowledge,
+				category_groups: existingCategoriesServerKnowledge,
+				transactions: existingTransactionsServerKnowledge
 			},
 			last_fetched: new Date()
 		});
 
 		// Bulk put scheduled transactions
 		await db.scheduled_transactions.bulkPut(scheduledTransactions);
+
+		// MARK: - Fetch historical transactions
+
+		let transactionsEndpoint = `https://api.ynab.com/v1/budgets/${budgetId}/transactions`;
+
+		if (existingTransactionsServerKnowledge) {
+			transactionsEndpoint += `?last_knowledge_of_server=${existingTransactionsServerKnowledge}`;
+		}
+
+		const transactionsFetch = await fetch(transactionsEndpoint, {
+			headers: {
+				Authorization: `Bearer ${sessionStorage.getItem('ynab_access_token')}`
+			}
+		});
+
+		if (!transactionsFetch.ok) {
+			if (transactionsFetch.status === 401) {
+				alert('Unauthorized. Please login again.');
+			} else {
+				alert(`Failed to fetch transactions: ${transactionsFetch.statusText}`);
+			}
+			fetchingData = false;
+			return;
+		}
+
+		const transactionsResponseJson: TransactionsResponse = await transactionsFetch.json();
+		const fetchedTransactions: TransactionDetail[] = transactionsResponseJson.data.transactions;
+		const newTransactionsServerKnowledge = transactionsResponseJson.data.server_knowledge;
+
+		// Load existing scheduled transactions from DB to merge history
+		const existingScheduledTransactions = await db.scheduled_transactions
+			.where('budget_id')
+			.equals(budgetId)
+			.toArray();
+
+		const updatedWithHistory = assignHistoricalTransactionsToScheduledTransactions(
+			fetchedTransactions,
+			existingScheduledTransactions
+		);
+
+		await db.scheduled_transactions.bulkPut(updatedWithHistory);
 
 		// MARK: - Now fetch category groups with categories nested in each
 
@@ -152,7 +211,8 @@
 		await db.budgets.update(budgetId, {
 			server_knowledge: {
 				scheduled_transactions: newScheduledTransactionsServerKnowledge,
-				category_groups: newCategoryGroupsServerKnowledge
+				category_groups: newCategoryGroupsServerKnowledge,
+				transactions: newTransactionsServerKnowledge
 			},
 			last_fetched: new Date()
 		});

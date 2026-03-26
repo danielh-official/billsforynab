@@ -2,7 +2,8 @@ import { Dexie, type EntityTable } from 'dexie';
 import type {
 	BudgetDetail,
 	CategoryGroupWithCategories,
-	ScheduledTransactionDetail
+	ScheduledTransactionDetail,
+	TransactionDetail
 } from 'ynab/dist/models';
 
 interface CustomBudgetDetail extends BudgetDetail {
@@ -10,6 +11,7 @@ interface CustomBudgetDetail extends BudgetDetail {
 	server_knowledge?: {
 		scheduled_transactions?: number;
 		category_groups?: number;
+		transactions?: number;
 	};
 	last_fetched?: Date;
 }
@@ -19,6 +21,7 @@ interface CustomScheduledTransactionDetail extends ScheduledTransactionDetail {
 	excluded?: boolean;
 	monthly_amount?: number;
 	published?: boolean;
+	history?: TransactionDetail[];
 }
 
 interface CustomCategoryGroupWithCategories extends CategoryGroupWithCategories {
@@ -41,6 +44,7 @@ db.version(2).stores({
 export type {
 	CustomBudgetDetail,
 	CustomScheduledTransactionDetail,
-	CustomCategoryGroupWithCategories
+	CustomCategoryGroupWithCategories,
+	TransactionDetail
 };
 export { db };

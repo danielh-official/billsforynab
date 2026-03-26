@@ -3,7 +3,8 @@
 import type {
 	PostScheduledTransactionWrapper,
 	PutScheduledTransactionWrapper,
-	ScheduledTransactionFrequency
+	ScheduledTransactionFrequency,
+	TransactionDetail
 } from 'ynab/dist/models';
 import {
 	db,
@@ -11,7 +12,7 @@ import {
 	type CustomCategoryGroupWithCategories,
 	type CustomScheduledTransactionDetail
 } from '$lib/db';
-import { SvelteDate } from 'svelte/reactivity';
+import { SvelteDate, SvelteMap } from 'svelte/reactivity';
 
 export async function updateBillInYNAB(
 	budgetId: string,
@@ -656,6 +657,48 @@ export function determineAmountStringFromBudgetCurrency(
 	return formatter.format(amount / 1000);
 }
 
+export function frequencyToDays(frequency: string): number | null {
+	switch (frequency) {
+		case 'daily':
+			return 1;
+		case 'weekly':
+			return 7;
+		case 'everyOtherWeek':
+			return 14;
+		case 'twiceAMonth':
+			return 15;
+		case 'monthly':
+			return 30;
+		case 'everyOtherMonth':
+			return 60;
+		case 'every3Months':
+			return 90;
+		case 'every4Months':
+			return 120;
+		case 'twiceAYear':
+			return 182;
+		case 'yearly':
+			return 365;
+		case 'everyOtherYear':
+			return 730;
+		default:
+			return null;
+	}
+}
+
+export function getActivityStatus(
+	bill: CustomScheduledTransactionDetail,
+	latestDateStr: string
+): { label: string; active: boolean } | null {
+	const freqDays = frequencyToDays(bill.frequency as string);
+	if (freqDays === null) return null;
+	const daysSince = Math.floor(
+		(new Date().getTime() - new Date(latestDateStr).getTime()) / (1000 * 60 * 60 * 24)
+	);
+	const active = daysSince <= freqDays * 1.7;
+	return { label: active ? 'likely active' : 'likely inactive', active };
+}
+
 export function getFrequencyMultiplier(frequency: ScheduledTransactionFrequency) {
 	switch (frequency) {
 		case 'never':
@@ -685,4 +728,62 @@ export function getFrequencyMultiplier(frequency: ScheduledTransactionFrequency)
 		default:
 			return 0;
 	}
+}
+
+export function assignHistoricalTransactionsToScheduledTransactions(
+	fetchedTransactions: TransactionDetail[],
+	existingScheduledTransactions: CustomScheduledTransactionDetail[]
+) {
+	// Build a map of scheduled transaction id → history entries keyed by transaction id
+	const historyMap = new SvelteMap<string, Map<string, TransactionDetail>>();
+	for (const st of existingScheduledTransactions) {
+		const byId = new SvelteMap<string, TransactionDetail>();
+		for (const t of st.history ?? []) {
+			byId.set(t.id, t);
+		}
+		historyMap.set(st.id, byId);
+	}
+
+	// Match each fetched transaction to all scheduled transactions it corresponds to and merge into
+	// history. A split transaction can match multiple scheduled transactions via its subtransactions.
+	for (const transaction of fetchedTransactions) {
+		const matches = existingScheduledTransactions.filter((st) => {
+			// Check top-level payee (only return true on a positive match; a payee_id mismatch
+			// does NOT block the subtransaction fallback below)
+			if (st.payee_id && transaction.payee_id && st.payee_id === transaction.payee_id) {
+				return true;
+			}
+			if (st.payee_name != null && st.payee_name === transaction.payee_name) {
+				return true;
+			}
+			// Fall through to subtransactions (split transactions)
+			return (
+				transaction.subtransactions?.some((sub) => {
+					if (st.payee_id && sub.payee_id) {
+						return st.payee_id === sub.payee_id;
+					}
+					return st.payee_name != null && st.payee_name === sub.payee_name;
+				}) ?? false
+			);
+		});
+
+		for (const match of matches) {
+			const byId = historyMap.get(match.id)!;
+			if (transaction.deleted) {
+				byId.delete(transaction.id);
+			} else {
+				byId.set(transaction.id, transaction);
+			}
+		}
+	}
+
+	// Write merged history back to scheduled transactions
+	const updatedWithHistory: CustomScheduledTransactionDetail[] = existingScheduledTransactions.map(
+		(st) => ({
+			...st,
+			history: Array.from(historyMap.get(st.id)?.values() ?? [])
+		})
+	);
+
+	return updatedWithHistory;
 }

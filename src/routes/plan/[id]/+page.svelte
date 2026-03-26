@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { liveQuery } from 'dexie';
 	import { type Category } from 'ynab/dist/models';
-	import { db } from '$lib/db';
+	import { db, type TransactionDetail } from '$lib/db';
 	import { resolve } from '$app/paths';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { browser } from '$app/environment';
@@ -16,7 +16,11 @@
 	import LastFetchedDate from '$lib/components/LastFetchedDate.svelte';
 	import ParsedFrequency from '$lib/components/ParsedFrequency.svelte';
 	import FirstPaidDate from '$lib/components/FirstPaidDate.svelte';
-	import { determineAmountStringFromBudgetCurrency, getFrequencyMultiplier } from '$lib';
+	import {
+		determineAmountStringFromBudgetCurrency,
+		getFrequencyMultiplier,
+		getActivityStatus
+	} from '$lib';
 	import EditBillLink from '$lib/components/EditBillLink.svelte';
 
 	// MARK: - Mount and budgetId extraction
@@ -202,6 +206,31 @@
 		}
 
 		return null;
+	}
+
+	// MARK: - History helpers
+
+	function getLatestTransaction(history: TransactionDetail[]): TransactionDetail {
+		return history.reduce((latest, t) => (t.date > latest.date ? t : latest));
+	}
+
+	function relativeDate(dateStr: string): string {
+		const diffDays = Math.floor(
+			(new Date().getTime() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24)
+		);
+		if (diffDays === 0) return 'today';
+		if (diffDays === 1) return 'yesterday';
+		if (diffDays < 7) return `${diffDays} days ago`;
+		if (diffDays < 30) {
+			const weeks = Math.floor(diffDays / 7);
+			return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+		}
+		if (diffDays < 365) {
+			const months = Math.floor(diffDays / 30);
+			return `${months} month${months > 1 ? 's' : ''} ago`;
+		}
+		const years = Math.floor(diffDays / 365);
+		return `${years} year${years > 1 ? 's' : ''} ago`;
 	}
 
 	let categoryGroups = liveQuery(() => {
@@ -421,6 +450,32 @@
 							{#if bill.memo}
 								<p class="mt-1 text-xs text-stone-500 dark:text-stone-400">{bill.memo}</p>
 							{/if}
+							{#if bill.history && bill.history.length > 0}
+								{@const latestTx = getLatestTransaction(bill.history)}
+								{@const status = getActivityStatus(bill, latestTx.date)}
+								<div
+									class="mt-2 border-t border-stone-200 pt-2 text-xs text-stone-500 dark:border-stone-700 dark:text-stone-400"
+								>
+									<p>
+										Latest Date: {relativeDate(latestTx.date)}{#if status}
+											<span class="m-2">
+												(<span
+													class={{
+														'text-green-600 dark:text-green-400': status.active,
+														'text-amber-600 dark:text-amber-400': !status.active
+													}}>{status.label}</span
+												>)
+											</span>
+										{/if}
+									</p>
+									<p>
+										Latest Amount: {determineAmountStringFromBudgetCurrency(
+											-latestTx.amount,
+											$currentBudget
+										)}
+									</p>
+								</div>
+							{/if}
 						</div>
 					</li>
 				{/each}
@@ -462,6 +517,24 @@
 								(<ParsedFrequency {bill} />)
 							</div>
 							<div class="mt-4 text-stone-500 dark:text-stone-400"><BillDueDate {bill} /></div>
+							{#if bill.history && bill.history.length > 0}
+								{@const latestTx = getLatestTransaction(bill.history)}
+								{@const status = getActivityStatus(bill, latestTx.date)}
+								<div class="mt-1 text-xs text-stone-400 dark:text-stone-500">
+									<span class="font-medium text-stone-600 dark:text-stone-400">History</span>
+									· Latest: {relativeDate(latestTx.date)}{#if status}
+										<span class="m-2">
+											(<span
+												class={{
+													'text-green-600 dark:text-green-400': status.active,
+													'text-amber-600 dark:text-amber-400': !status.active
+												}}>{status.label}</span
+											>)
+										</span>
+									{/if}
+									· {determineAmountStringFromBudgetCurrency(-latestTx.amount, $currentBudget)}
+								</div>
+							{/if}
 						</div>
 						<div
 							class="hidden shrink-0 text-right text-xs text-stone-500 sm:block dark:text-stone-400"

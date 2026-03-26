@@ -35,7 +35,8 @@
 			await db.budgets.update(budgetId, {
 				server_knowledge: {
 					scheduled_transactions: 0,
-					category_groups: 0
+					category_groups: 0,
+					transactions: 0
 				},
 				last_fetched: undefined
 			});
