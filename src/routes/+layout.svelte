@@ -142,46 +142,54 @@
 {/if}
 
 {#if !loading}
-	<header class="mx-auto flex w-full max-w-5xl flex-col justify-end px-6 py-6 lg:flex-row">
-		<nav class="flex flex-col items-center gap-4 lg:flex-row" aria-label="Site navigation">
-			<ThemeToggle />
-			{#if !demoBudgetAlreadyExists}
-				<button
-					type="button"
-					onclick={createDemoPlan}
-					disabled={demoBudgetAlreadyExists}
-					class="cursor-pointer rounded-lg border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-800 transition-colors hover:bg-stone-50 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700/50"
-				>
-					Try Demo
-				</button>
-			{:else}
-				<a
-					href={resolve('/plan/demo')}
-					class="cursor-pointer rounded-lg border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-800 transition-colors hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700/50"
-				>
-					Try Demo
-				</a>
-			{/if}
-			{#if authToken}
-				<button
-					type="button"
-					class="cursor-pointer rounded-lg border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-800 transition-colors hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700/50"
-					onclick={() => {
-						sessionStorage.removeItem('ynab_access_token');
-						sessionStorage.removeItem('ynab_token_write');
-						location.reload();
-					}}
-				>
-					Log out
-				</button>
-			{:else}
-				<a
-					href={resolve('/login')}
-					class="cursor-pointer rounded-lg border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-800 transition-colors hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700/50"
-				>
-					Login
-				</a>
-			{/if}
+	<header>
+		<nav
+			class="mx-auto flex max-w-5xl items-center justify-between p-5"
+			aria-label="Site navigation"
+		>
+			<div class="flex">
+				<a class="text-xl font-bold" href={resolve('/')}>Bills (For YNAB)</a>
+			</div>
+			<div class="flex flex-col items-center gap-4 lg:flex-row">
+				<ThemeToggle />
+				{#if !demoBudgetAlreadyExists}
+					<button
+						type="button"
+						onclick={createDemoPlan}
+						disabled={demoBudgetAlreadyExists}
+						class="cursor-pointer rounded-lg border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-800 transition-colors hover:bg-stone-50 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700/50"
+					>
+						Try Demo
+					</button>
+				{:else}
+					<a
+						href={resolve('/plan/demo')}
+						class="cursor-pointer rounded-lg border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-800 transition-colors hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700/50"
+					>
+						Try Demo
+					</a>
+				{/if}
+				{#if authToken}
+					<button
+						type="button"
+						class="cursor-pointer rounded-lg border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-800 transition-colors hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700/50"
+						onclick={() => {
+							sessionStorage.removeItem('ynab_access_token');
+							sessionStorage.removeItem('ynab_token_write');
+							location.reload();
+						}}
+					>
+						Log out
+					</button>
+				{:else}
+					<a
+						href={resolve('/login')}
+						class="cursor-pointer rounded-lg border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-800 transition-colors hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700/50"
+					>
+						Login
+					</a>
+				{/if}
+			</div>
 		</nav>
 	</header>
 
@@ -216,12 +224,7 @@
 				target="_blank"
 				rel="noopener noreferrer">GitHub</a
 			>
-			<a
-				target="_blank"
-				rel="noopener noreferrer"
-				href="https://github.com/danielh-official/billsforynab/blob/main/PRIVACY.md"
-				class="text-blue-500 hover:underline">Privacy Policy</a
-			>
+			<a href="/privacy" class="text-blue-500 hover:underline">Privacy Policy</a>
 		</p>
 		<div class="mt-4 flex justify-center">
 			<WorksWithYnab />
