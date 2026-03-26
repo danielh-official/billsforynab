@@ -22,6 +22,7 @@
 		const redirectTo = getSafeRedirect(page.url.searchParams.get('redirect'));
 
 		if (accessToken) {
+			// eslint-disable-next-line svelte/no-navigation-without-resolve
 			goto(redirectTo);
 			return;
 		}

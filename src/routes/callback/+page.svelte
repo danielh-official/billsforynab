@@ -13,6 +13,7 @@
 			sessionStorage.setItem('ynab_token_write', 'false');
 			const redirectTo = sessionStorage.getItem('ynab_post_login_redirect') ?? resolve('/');
 			sessionStorage.removeItem('ynab_post_login_redirect');
+			// eslint-disable-next-line svelte/no-navigation-without-resolve
 			goto(redirectTo);
 		}
 	});
