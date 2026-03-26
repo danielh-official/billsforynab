@@ -404,7 +404,7 @@
 							<p class="text-stone-700 dark:text-stone-300">
 								{determineAmountStringFromBudgetCurrency(-bill.amount, $currentBudget)}
 								<span class="text-stone-500 dark:text-stone-400">
-									<ParsedFrequency {bill} />
+									(<ParsedFrequency {bill} />)
 								</span>
 								to <strong>{bill.payee_name ?? 'unspecified payee'}</strong>
 							</p>
@@ -457,21 +457,21 @@
 							<span class="font-medium text-stone-900 dark:text-stone-100"
 								>{bill.payee_name ?? 'unspecified payee'}</span
 							>
-							<div class="my-2 text-stone-700 dark:text-stone-300">
-								{determineAmountStringFromBudgetCurrency(
-									-(bill.monthly_amount ?? bill.amount * getFrequencyMultiplier(bill.frequency)),
-									$currentBudget
-								)}<span class="text-stone-500 dark:text-stone-400">/mo</span>
-							</div>
 							<div class="text-stone-500 dark:text-stone-400">
 								{determineAmountStringFromBudgetCurrency(-bill.amount, $currentBudget)}
-								<ParsedFrequency {bill} />
+								(<ParsedFrequency {bill} />)
 							</div>
 							<div class="mt-4 text-stone-500 dark:text-stone-400"><BillDueDate {bill} /></div>
 						</div>
 						<div
 							class="hidden shrink-0 text-right text-xs text-stone-500 sm:block dark:text-stone-400"
 						>
+							<p class="my-2 text-stone-700 dark:text-stone-300">
+								{determineAmountStringFromBudgetCurrency(
+									-(bill.monthly_amount ?? bill.amount * getFrequencyMultiplier(bill.frequency)),
+									$currentBudget
+								)}<span class="text-stone-500 dark:text-stone-400">/mo</span>
+							</p>
 							<p>{bill.category_name}</p>
 							<p>{bill.account_name}</p>
 						</div>
