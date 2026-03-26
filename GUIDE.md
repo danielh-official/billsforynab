@@ -8,7 +8,7 @@ This app helps you track and visualize your recurring bills from YNAB.
 
 ### Setting Up Your Own Instance
 
-If you're unable to log in due to the API restriction, follow these steps to run the app locally:
+Follow these steps to run the app locally:
 
 1. **Fork and clone the repository:**
 
@@ -27,7 +27,7 @@ If you're unable to log in due to the API restriction, follow these steps to run
    - Go to [YNAB Developer Settings](https://app.ynab.com/settings/developer)
    - Click "New Application"
    - Enter a name for your application (e.g., "My Bills for YNAB")
-   - In the "Redirect URI(s)" field, enter: `http://localhost:5173/callback` and `http://localhost:5173/callback/write`
+   - In the "Redirect URI(s)" field, enter: `http://localhost:5173/callback` and `http://localhost:5173/callback/write` (replace "5173" with whatever port you're running on if it's different)
      - **Note**: If you are hosting this on a GitHub Pages site, your root url may be something like `my-username.github.io/billsforynab`. In such a case, the "Redirect URI(s)" should be `my-username.github.io/billsforynab/callback` and `my-username.github.io/billsforynab/callback/write`
    - Click "Save Application"
    - Copy the Client ID
@@ -41,7 +41,6 @@ If you're unable to log in due to the API restriction, follow these steps to run
    Edit the `.env` file and set:
 
    ```
-   PUBLIC_ADAPTER='static'
    PUBLIC_YNAB_CLIENT_ID='your-client-id-from-step-3'
    ```
 
@@ -57,11 +56,20 @@ You can also find instructions in the [README](https://github.com/danielh-offici
 
 For any issues, [write one](https://github.com/danielh-official/billsforynab/issues/new).
 
+## Login
+
+Navigate to the login page at /login and select either one of the options:
+
+- Read-Only: permissions that only allow reading from YNAB but no writes
+- Read and Write: allows readin from and writing to YNAB
+
+Choose your default plan and click Authorize.
+
 ## Getting Plans
 
-1. Click "Login With YNAB (Read-Only)", select your default plan and click "Authorize"
-   - Alternatively, you can click "Login With YNAB (Read and Write)", which gives you access to more features (see: [In a Plan (Read and Write)](#in-a-plan-read-and-write)).
-2. Click "Fetch Plans" to get all your plans from YNAB
+1. Click "Read-Only", then click "Authorize" on the YNAB page
+   - Alternatively, you can click "Read and Write", which gives you access to more features (see: [In a Plan (Read and Write)](#in-a-plan-read-and-write)).
+2. Click "Fetch plans" to get all your plans from YNAB
    - If you want to test the app out first, create a demo plan instead
 3. Click "View" to enter a plan and "Delete" to delete the plan after confirming
 
@@ -73,23 +81,25 @@ For any issues, [write one](https://github.com/danielh-official/billsforynab/iss
 2. The app will automatically calculate monthly equivalents for all frequencies (weekly, yearly, etc.)
 3. Your data is stored locally in your browser for offline access
 
-### Sorting Your Bills
+### Sorting and Layout
 
-Use the sorting options to organize your bills:
+Use the "Sort:" dropdown to organize your bills:
 
-- **Next Due Date:** See which bills are coming up soon
-- **Monthly Amount:** Sort by the monthly equivalent amount
+- **Next Due Date (Ascending):** See which bills are coming up soon
+- **Monthly Amount (Descending):** Sort by the monthly equivalent amount
 
-Toggle between ascending and descending order using the "Sort Direction" dropdown.
+Use the Grid/List toggle to switch between a card grid view and a compact list view.
 
 ### Excluding Bills
 
-Click the checkmark (✓) or eye (👁️) icon on any bill to exclude or include it in your totals. Excluded bills appear grayed out and won't count toward your monthly/yearly totals.
+Click the checkmark or eye icon on any bill to exclude or include it in your totals. Excluded bills appear grayed out and won't count toward your monthly/yearly totals.
 
 ### Understanding the Stats
 
-- **Total Bills Per Month:** The sum of all bills converted to a monthly amount
-- **Total Bills Per Year:** Your monthly total multiplied by 12
+- **Total per month:** The sum of all included bills converted to a monthly amount
+- **Total per year:** Your monthly total multiplied by 12
+- **Last Fetched Date:** When data was last retrieved from YNAB
+- **Excluded:** The number of bills currently excluded from totals
 
 ### Resetting Your Data
 
@@ -111,15 +121,15 @@ You get everything with read-only access PLUS:
 You have the option of creating a bill as draft or published:
 
 - Draft Bills: If you just want to see what your bill will look like without sending it to YNAB, you can create a bill as a draft. This is saved locally in your browser. (NOTE: if you clear all storage or use a new browser, the bill won't be available like it would be if it were published.)
-- Published Bills: If you want to sync the bill to YNAB immediately, create it with the "published" checkbox checked (or click on the "🚀" icon and confirm to publish a draft).
+- Published Bills: If you want to sync the bill to YNAB immediately, create it with the "published" checkbox checked (or click on the upload icon and confirm to publish a draft).
 
-To create a new bill, click "Create Bill". To edit a bill, click the "✏️" icon.
+To create a new bill, click "Create Bill". To edit a bill, click the pencil icon.
 
 - Account is required
 - Date is required
 - Amount must be greater than 0
 
-To delete a bill, click the "🗑️" icon and confirm.
+To delete a bill, click the trash icon and confirm.
 
 ### Demo Mode
 
