@@ -9,6 +9,9 @@
 	import { resolve } from '$app/paths';
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
+    import { injectSpeedInsights } from '@vercel/speed-insights/sveltekit';
+
+    injectSpeedInsights();
 
 	let { children } = $props();
 
