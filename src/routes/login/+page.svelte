@@ -5,12 +5,28 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 
+	function getSafeRedirect(redirect: string | null): string {
+		if (!redirect) return resolve('/');
+		try {
+			const url = new URL(redirect, window.location.origin);
+			if (url.origin !== window.location.origin) return resolve('/');
+			if (url.pathname === resolve('/login')) return resolve('/');
+			return url.pathname;
+		} catch {
+			return resolve('/');
+		}
+	}
+
 	$effect(() => {
 		const accessToken = sessionStorage.getItem('ynab_access_token');
+		const redirectTo = getSafeRedirect(page.url.searchParams.get('redirect'));
 
 		if (accessToken) {
-			goto(resolve('/'));
+			goto(redirectTo);
+			return;
 		}
+
+		sessionStorage.setItem('ynab_post_login_redirect', redirectTo);
 	});
 
 	let currentUrl = $derived.by(() => {

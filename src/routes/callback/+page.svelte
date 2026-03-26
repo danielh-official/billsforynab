@@ -11,7 +11,9 @@
 		if (accessToken) {
 			sessionStorage.setItem('ynab_access_token', accessToken);
 			sessionStorage.setItem('ynab_token_write', 'false');
-			goto(resolve('/'));
+			const redirectTo = sessionStorage.getItem('ynab_post_login_redirect') ?? resolve('/');
+			sessionStorage.removeItem('ynab_post_login_redirect');
+			goto(redirectTo);
 		}
 	});
 </script>
