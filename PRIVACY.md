@@ -30,7 +30,7 @@ Your data is secured using the encryption and isolation standards of the browser
 
 ## Consent
 
-The current data being fetched from YNAB is your scheduled transactions. By using the app, you consent to the retrieval and use of this data for the purpose of providing our services.
+The current data being fetched from YNAB is your scheduled transactions, categories, and historical transactions. By using the app, you consent to the retrieval and use of this data for the purpose of providing our services.
 
 If there is any change in the type of data being accessed or how we use your data, we will notify you and obtain your consent before proceeding.
 
