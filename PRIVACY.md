@@ -1,8 +1,18 @@
 # Privacy
 
-**Last Updated: February 7, 2026**
+**Last Updated: March 26, 2026**
 
 Thank you for choosing Bills (For YNAB) (referred to as “we,” “our,” or “us”). We are committed to protecting your privacy and handling your data with the utmost care. This privacy policy outlines how we handle, store, and secure the data obtained through the YNAB API to ensure your confidence and peace of mind while using our services.
+
+## billsforynab.com
+
+https://billsforynab.com is a published version of this product that is owned and maintained by the lead developer, Daniel Haven. By using this instance, you consent to the collection of:
+
+- Anonymous speed insights
+- Anonymous analytics, including but not limited to visitor and page view count
+- Any other anonymized information collected by Vercel
+
+The product remains open source at https://github.com/danielh-official/billsforynab. You may download and self-host your own instance.
 
 ## Data Handling, Storage, and Security
 
