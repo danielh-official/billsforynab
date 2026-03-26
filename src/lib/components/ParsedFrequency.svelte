@@ -40,4 +40,4 @@
 	}
 </script>
 
-({parseFrequencyText(bill.frequency)})
+{parseFrequencyText(bill.frequency)}
