@@ -241,7 +241,7 @@
 			trademarks, emblems, and images are registered trademarks of YNAB.
 		</p>
 		<p class="mx-auto max-w-2xl">
-			&copy; {new Date().getFullYear()} Bills (For YNAB).
+			&copy; {new Date().getFullYear()} Daniel Hotyanov
 		</p>
 	</footer>
 {/if}
