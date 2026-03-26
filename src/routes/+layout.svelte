@@ -1,14 +1,11 @@
 <script lang="ts">
-	import favicon from '$lib/assets/favicon.svg';
+	import favicon from '$lib/assets/favicon.png';
 	import '$lib/app.css';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import WorksWithYnab from '$lib/components/WorksWithYnab.svelte';
-	import { db, type CustomBudgetDetail } from '$lib/db';
-	import { liveQuery } from 'dexie';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import { browser } from '$app/environment';
-	import { goto } from '$app/navigation';
 	import { injectSpeedInsights } from '@vercel/speed-insights/sveltekit';
 	injectSpeedInsights();
 	import { dev } from '$app/environment';
@@ -70,29 +67,6 @@
 		}
 	});
 
-	const budgets = liveQuery(() => db.budgets.orderBy('id').toArray());
-
-	function createDemoPlan() {
-		const demoBudget: CustomBudgetDetail = {
-			id: 'demo',
-			name: 'Demo',
-			last_modified_on: new Date().toISOString(),
-			first_month: new Date().toISOString().substring(0, 7),
-			last_month: new Date().toISOString().substring(0, 7),
-			is_default: false
-		};
-
-		db.budgets.put(demoBudget);
-
-		goto(resolve(`/plan/demo`));
-	}
-
-	let demoBudgetAlreadyExists = $derived.by(() => {
-		if ($budgets) {
-			return $budgets.some((b) => b.id === 'demo');
-		}
-		return false;
-	});
 </script>
 
 <svelte:head>
@@ -149,31 +123,14 @@
 {#if !loading}
 	<header>
 		<nav
-			class="mx-auto flex max-w-7xl items-center justify-between p-5"
+			class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 p-5 md:flex-row"
 			aria-label="Site navigation"
 		>
-			<div class="flex">
+			<div class="flex items-center gap-6">
 				<a class="text-xl font-bold" href={resolve('/')}>Bills (For YNAB)</a>
 			</div>
 			<div class="flex flex-col items-center gap-4 lg:flex-row">
 				<ThemeToggle />
-				{#if !demoBudgetAlreadyExists}
-					<button
-						type="button"
-						onclick={createDemoPlan}
-						disabled={demoBudgetAlreadyExists}
-						class="cursor-pointer rounded-lg border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-800 transition-colors hover:bg-stone-50 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700/50"
-					>
-						Try Demo
-					</button>
-				{:else}
-					<a
-						href={resolve('/plan/demo')}
-						class="cursor-pointer rounded-lg border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-800 transition-colors hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700/50"
-					>
-						Try Demo
-					</a>
-				{/if}
 				{#if authToken}
 					<button
 						type="button"
@@ -189,7 +146,7 @@
 				{:else}
 					<a
 						href="{resolve('/login')}?redirect={encodeURIComponent(
-							page.url.pathname !== resolve('/login') ? page.url.pathname : resolve('/')
+							page.url.pathname !== resolve('/login') ? page.url.pathname : resolve('/plans')
 						)}"
 						class="cursor-pointer rounded-lg border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-800 transition-colors hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700/50"
 					>

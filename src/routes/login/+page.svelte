@@ -6,14 +6,14 @@
 	import { page } from '$app/state';
 
 	function getSafeRedirect(redirect: string | null): string {
-		if (!redirect) return resolve('/');
+		if (!redirect) return resolve('/plans');
 		try {
 			const url = new URL(redirect, window.location.origin);
-			if (url.origin !== window.location.origin) return resolve('/');
-			if (url.pathname === resolve('/login')) return resolve('/');
+			if (url.origin !== window.location.origin) return resolve('/plans');
+			if (url.pathname === resolve('/login')) return resolve('/plans');
 			return url.pathname;
 		} catch {
-			return resolve('/');
+			return resolve('/plans');
 		}
 	}
 

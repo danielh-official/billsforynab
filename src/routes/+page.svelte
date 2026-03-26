@@ -1,158 +1,115 @@
 <script lang="ts">
-	import { db } from '$lib/db';
-	import { liveQuery } from 'dexie';
-	import type { BudgetDetail, BudgetSummaryResponse } from 'ynab/dist/models';
-	import { browser } from '$app/environment';
 	import { resolve } from '$app/paths';
-
-	let authToken = $derived.by(() => {
-		if (browser) {
-			return sessionStorage.getItem('ynab_access_token') || null;
-		}
-		return null;
-	});
-
-	let fetchingBudgets = $state(false);
-
-	function setFetchingBudgets(value: boolean) {
-		fetchingBudgets = value;
-	}
-
-	async function fetchBudgets() {
-		if (!authToken) {
-			alert('No access token found. Please login again.');
-			return;
-		}
-
-		setFetchingBudgets(true);
-
-		const budgetsResponse = await fetch('https://api.ynab.com/v1/budgets?include_accounts=true', {
-			headers: {
-				Authorization: `Bearer ${authToken}`
-			}
-		});
-
-		if (budgetsResponse.status === 401) {
-			alert('Unauthorized. Please login again.');
-			sessionStorage.removeItem('ynab_access_token');
-			return;
-		}
-
-		if (!budgetsResponse.ok) {
-			alert(`Failed to fetch budgets: ${budgetsResponse.statusText}`);
-			return;
-		}
-
-		const budgetsData: BudgetSummaryResponse = await budgetsResponse.json();
-
-		const defaultBudgetId = budgetsData.data.default_budget?.id;
-
-		const budgets = budgetsData.data.budgets.map((b: BudgetDetail) => {
-			return {
-				...b,
-				is_default: b.id === defaultBudgetId
-			};
-		});
-
-		db.budgets.bulkPut(budgets);
-
-		setFetchingBudgets(false);
-	}
+	import { goto } from '$app/navigation';
+	import { db, type CustomBudgetDetail } from '$lib/db';
+	import { liveQuery } from 'dexie';
+	import lightBills from '$lib/assets/bills.light.png';
+	import darkBills from '$lib/assets/bills.dark.png';
 
 	const budgets = liveQuery(() => db.budgets.orderBy('id').toArray());
 
-	function deleteBudget(id: string) {
-		if (confirm('Are you sure you want to delete this plan? This action cannot be undone.')) {
-			db.budgets.delete(id);
+	const demoBudgetAlreadyExists = $derived($budgets?.some((b) => b.id === 'demo') ?? false);
 
-			// Find all scheduled transactions associated with this budget and delete them
-			db.scheduled_transactions
-				.where('budget_id')
-				.equals(id)
-				.toArray()
-				.then((transactions) => {
-					const deletePromises = transactions.map((tx) => db.scheduled_transactions.delete(tx.id));
-					return Promise.all(deletePromises);
-				})
-				.catch((error) => {
-					console.error('Failed to delete scheduled transactions for budget:', error);
-				});
-
-			// Find all category groups associated with this budget and delete them
-			db.category_groups
-				.where('budget_id')
-				.equals(id)
-				.toArray()
-				.then((groups) => {
-					const deletePromises = groups.map((group) => db.category_groups.delete(group.id));
-					return Promise.all(deletePromises);
-				})
-				.catch((error) => {
-					console.error('Failed to delete category groups for budget:', error);
-				});
-		}
+	function createDemoPlan() {
+		const demoBudget: CustomBudgetDetail = {
+			id: 'demo',
+			name: 'Demo',
+			last_modified_on: new Date().toISOString(),
+			first_month: new Date().toISOString().substring(0, 7),
+			last_month: new Date().toISOString().substring(0, 7),
+			is_default: false
+		};
+		db.budgets.put(demoBudget);
+		goto(resolve('/plan/demo'));
 	}
+
+	const loggedIn = $derived.by(() => {
+		return !!sessionStorage.getItem('ynab_access_token');
+	});
+
+	const defaultPlan = liveQuery(() =>
+		db.budgets.toArray().then((budget) => budget.filter((x) => x.is_default)[0])
+	);
 </script>
 
 <svelte:head>
-	<title>Home | Bills (For YNAB)</title>
+	<title>Bills (For YNAB)</title>
 </svelte:head>
 
-<div class="mx-auto flex w-full max-w-xl flex-col items-center gap-10">
-	<button
-		type="button"
-		class="rounded-lg border border-stone-200 bg-stone-50 px-4 py-2 text-sm text-stone-500 hover:text-stone-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-stone-700 dark:bg-stone-800/30 dark:text-stone-400 dark:hover:bg-stone-800/50 dark:hover:text-stone-200"
-		onclick={fetchBudgets}
-		disabled={fetchingBudgets || !authToken}
-	>
-		{fetchingBudgets ? 'Fetching…' : 'Fetch plans'}
-	</button>
+<div
+	class="mx-auto hidden w-full max-w-4xl rounded-xl border border-stone-200 bg-stone-100 p-3 shadow-sm md:block dark:border-stone-700 dark:bg-stone-800"
+>
+	<div class="mb-2 flex items-center gap-1.5 px-1">
+		<span class="h-3 w-3 rounded-full bg-stone-300 dark:bg-stone-600"></span>
+		<span class="h-3 w-3 rounded-full bg-stone-300 dark:bg-stone-600"></span>
+		<span class="h-3 w-3 rounded-full bg-stone-300 dark:bg-stone-600"></span>
+	</div>
+	<div class="overflow-hidden rounded-lg">
+		<img src={lightBills} alt="Bills screenshot" class="w-full dark:hidden" />
+		<img src={darkBills} alt="Bills screenshot" class="hidden w-full dark:block" />
+	</div>
+</div>
 
-	<section class="w-full text-left">
-		<h2 class="mb-3 text-sm font-medium text-stone-800 dark:text-stone-200">Your plans</h2>
-		{#if $budgets && $budgets.length > 0}
-			<ul
-				class="divide-y divide-stone-200 overflow-hidden rounded-lg border border-stone-200 dark:divide-stone-700 dark:border-stone-700"
-			>
-				{#each $budgets as budget (budget.id)}
-					<li
-						class="flex items-center justify-between gap-4 bg-white px-4 py-3 transition-colors hover:bg-stone-50 dark:bg-stone-800/30 dark:hover:bg-stone-800/50"
-					>
-						<div class="min-w-0">
-							<a
-								href={resolve(`/plan/${budget.id}`)}
-								class="block truncate font-medium text-stone-800 hover:underline dark:text-stone-200"
-							>
-								{budget.name}
-							</a>
-							{#if budget.is_default}
-								<span class="text-xs text-stone-500 dark:text-stone-400">Default</span>
-							{/if}
-						</div>
-						<div class="flex shrink-0 gap-3 text-sm">
-							<a
-								href={resolve(`/plan/${budget.id}`)}
-								aria-label="View {budget.name}"
-								class="text-stone-600 hover:underline dark:text-stone-400">View</a
-							>
-							<button
-								type="button"
-								class="cursor-pointer text-stone-500 hover:text-red-600 hover:underline dark:text-stone-400 dark:hover:text-red-400"
-								onclick={() => deleteBudget(budget.id)}
-								aria-label="Delete {budget.name}"
-							>
-								Delete
-							</button>
-						</div>
-					</li>
-				{/each}
-			</ul>
+<div class="mx-auto flex w-full max-w-md flex-col items-center gap-3 text-center">
+	<div class="flex flex-col gap-3">
+		<h1 class="text-3xl font-bold text-stone-800 dark:text-stone-100">Bills (For YNAB)</h1>
+		<p class="text-stone-500 dark:text-stone-400">A companion app for YNAB to manage your bills (i.e., repeating transactions).</p>
+		<ul
+			class="list-disc space-y-1 pl-5 text-left text-sm text-stone-500 md:ml-10 dark:text-stone-400"
+		>
+			<li><b>Two-way sync</b>: Sync to and from YNAB.</li>
+			<li><b>Special features</b>: Monthly/yearly totals, bill history.</li>
+			<li><b>Local storage</b>: Your YNAB data, only stored in YNAB.</li>
+		</ul>
+	</div>
+
+	<div class="mb-3 mt-10">
+		{#if loggedIn && $defaultPlan}
+			{#if $defaultPlan}
+				<a
+					href={resolve(`/plan/${$defaultPlan?.id}`)}
+					class="rounded-lg border border-stone-200 bg-stone-50 px-5 py-2.5 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800/30 dark:text-stone-400 dark:hover:bg-stone-800/50"
+				>
+					Use App
+				</a>
+			{:else}
+				<a
+					href={resolve(`/plans`)}
+					class="rounded-lg border border-stone-200 bg-stone-50 px-5 py-2.5 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800/30 dark:text-stone-400 dark:hover:bg-stone-800/50"
+				>
+					Use App
+				</a>
+			{/if}
 		{:else}
-			<p class="py-6 text-sm text-stone-500 dark:text-stone-400">No plans found.</p>
+			<a
+				href={resolve('/login')}
+				class="rounded-lg border border-stone-200 bg-stone-50 px-5 py-2.5 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800/30 dark:text-stone-400 dark:hover:bg-stone-800/50"
+			>
+				Login to YNAB
+			</a>
 		{/if}
-	</section>
+	</div>
 
-	<p class="max-w-sm text-center text-xs text-stone-400 dark:text-stone-500">
-		Data is stored locally in your browser and is not sent to our servers.
+	<p class="text-md mt-4 max-w-md text-stone-500 dark:text-stone-400">
+		Not sure yet? Try the demo. <i>No YNAB account required.</i>
 	</p>
+
+	<div class="flex flex-wrap justify-center gap-3">
+		{#if demoBudgetAlreadyExists}
+			<a
+				href={resolve('/plan/demo')}
+				class="rounded-lg border border-stone-200 bg-stone-50 px-5 py-2.5 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800/30 dark:text-stone-400 dark:hover:bg-stone-800/50"
+			>
+				Try Demo
+			</a>
+		{:else}
+			<button
+				type="button"
+				onclick={createDemoPlan}
+				class="rounded-lg border border-stone-200 bg-stone-50 px-5 py-2.5 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800/30 dark:text-stone-400 dark:hover:bg-stone-800/50"
+			>
+				Try Demo
+			</button>
+		{/if}
+	</div>
 </div>

@@ -27,8 +27,7 @@ Follow these steps to run the app locally:
    - Go to [YNAB Developer Settings](https://app.ynab.com/settings/developer)
    - Click "New Application"
    - Enter a name for your application (e.g., "My Bills for YNAB")
-   - In the "Redirect URI(s)" field, enter: `http://localhost:5173/callback` and `http://localhost:5173/callback/write` (replace "5173" with whatever port you're running on if it's different)
-     - **Note**: If you are hosting this on a GitHub Pages site, your root url may be something like `my-username.github.io/billsforynab`. In such a case, the "Redirect URI(s)" should be `my-username.github.io/billsforynab/callback` and `my-username.github.io/billsforynab/callback/write`
+   - In the "Redirect URI(s)" field, enter: http://localhost:5173/callback and http://localhost:5173/callback/write (replace "5173" with whatever port you're running on if it's different)
    - Click "Save Application"
    - Copy the Client ID
 
@@ -38,7 +37,7 @@ Follow these steps to run the app locally:
    cp .env.example .env
    ```
 
-   Edit the `.env` file and set:
+   Edit the .env file and set:
 
    ```
    PUBLIC_YNAB_CLIENT_ID='your-client-id-from-step-3'
@@ -50,7 +49,7 @@ Follow these steps to run the app locally:
    bun dev
    ```
 
-6. Open your browser to `http://localhost:5173` and log in with your YNAB account.
+6. Open your browser to http://localhost:5173 and log in with your YNAB account.
 
 You can also find instructions in the [README](https://github.com/danielh-official/billsforynab/blob/main/README.md#local-development).
 

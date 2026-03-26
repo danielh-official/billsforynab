@@ -32,7 +32,7 @@
 	$effect(() => {
 		if (!browser) return;
 		if (!budgetId) {
-			goto(resolve('/'));
+			goto(resolve('/plans'));
 			return;
 		}
 		if (!billId) {

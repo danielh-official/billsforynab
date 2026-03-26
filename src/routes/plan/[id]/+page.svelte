@@ -77,7 +77,7 @@
 		const id = page.params.id;
 
 		if (!id) {
-			goto(resolve('/'));
+			goto(resolve('/plans'));
 			return;
 		}
 
@@ -268,7 +268,7 @@
 	{#if budgetId}
 		<div class="w-full">
 			<a
-				href={resolve('/')}
+				href={resolve('/plans')}
 				class="text-sm font-medium text-stone-600 hover:underline dark:text-stone-400"
 			>
 				← Plans
