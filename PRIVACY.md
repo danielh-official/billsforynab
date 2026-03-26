@@ -6,7 +6,7 @@ Thank you for choosing Bills (For YNAB) (referred to as “we,” “our,” or 
 
 ## billsforynab.com
 
-https://billsforynab.com is a published version of this product that is owned and maintained by the lead developer, Daniel Haven. By using this instance, you consent to the collection of:
+https://billsforynab.com is a published version of this product that is owned and maintained by the lead developer, Daniel Hotyanov. By using this instance, you consent to the collection of:
 
 - Anonymous speed insights
 - Anonymous analytics, including but not limited to visitor and page view count
