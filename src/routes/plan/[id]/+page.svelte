@@ -290,7 +290,7 @@
 					type="button"
 					class="rounded-l-md border-r border-stone-300 px-2.5 py-1.5 text-xs font-medium transition-colors dark:border-stone-600 {layoutPreset ===
 					'grid'
-						? 'bg-stone-200 text-stone-900 dark:bg-stone-600 dark:text-stone-100'
+						? 'bg-stone-700 text-white dark:bg-stone-600 dark:text-stone-100'
 						: 'bg-white text-stone-600 hover:bg-stone-50 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700/50'}"
 					onclick={() => {
 						layoutPreset = 'grid';
@@ -303,7 +303,7 @@
 					type="button"
 					class="rounded-r-md px-2.5 py-1.5 text-xs font-medium transition-colors {layoutPreset ===
 					'list'
-						? 'bg-stone-200 text-stone-900 dark:bg-stone-600 dark:text-stone-100'
+						? 'bg-stone-700 text-white dark:bg-stone-600 dark:text-stone-100'
 						: 'bg-white text-stone-600 hover:bg-stone-50 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700/50'}"
 					onclick={() => {
 						layoutPreset = 'list';
