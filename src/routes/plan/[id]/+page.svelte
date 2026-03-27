@@ -552,7 +552,7 @@
 								{@const status = getActivityStatus(bill, latestTx.date)}
 								<div class="mt-1 text-xs text-stone-400 dark:text-stone-500">
 									<span class="font-medium text-stone-600 dark:text-stone-400">History</span>
-									· Latest: {relativeDate(latestTx.date)}{#if status}
+									· Last: {relativeDate(latestTx.date)}{#if status}
 										<span class="m-2">
 											(<span
 												class={{
