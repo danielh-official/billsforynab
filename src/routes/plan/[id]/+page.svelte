@@ -251,6 +251,7 @@
 	});
 
 	let fetchingData = $state(false);
+	let pendingDeleteBillId = $state<string | null>(null);
 </script>
 
 <svelte:head>
@@ -421,11 +422,21 @@
 							: ''}"
 					>
 						<div class="mb-2 flex justify-end gap-2">
-							<ToggleBillInclusionButton {bill} />
+							{#if pendingDeleteBillId !== bill.id}
+								<ToggleBillInclusionButton {bill} />
+							{/if}
 							{#if effectiveWriteAccess}
-								<EditBillLink {bill} {billsBeingSynced} {budgetId} />
-								<DeleteBillButton {bill} {isDemo} {billsBeingSynced} {budgetId} />
-								{#if !bill.published}
+								{#if pendingDeleteBillId !== bill.id}
+									<EditBillLink {bill} {billsBeingSynced} {budgetId} />
+								{/if}
+								<DeleteBillButton
+									{bill}
+									{isDemo}
+									{billsBeingSynced}
+									{budgetId}
+									bind:pendingDeleteBillId
+								/>
+								{#if !bill.published && pendingDeleteBillId !== bill.id}
 									<PublishDraftBillButton
 										budget={$currentBudget}
 										{bill}
@@ -581,11 +592,22 @@
 							<p>{bill.account_name}</p>
 						</div>
 						<div class="flex shrink-0 items-center gap-1">
-							<ToggleBillInclusionButton {bill} />
+							{#if pendingDeleteBillId !== bill.id}
+								<ToggleBillInclusionButton {bill} />
+							{/if}
 							{#if effectiveWriteAccess}
-								<EditBillLink {bill} {billsBeingSynced} {budgetId} />
-								<DeleteBillButton {bill} {isDemo} {billsBeingSynced} {budgetId} />
-								{#if !bill.published}
+								{#if pendingDeleteBillId !== bill.id}
+									<EditBillLink {bill} {billsBeingSynced} {budgetId} />
+								{/if}
+								<DeleteBillButton
+									{bill}
+									{isDemo}
+									{billsBeingSynced}
+									{budgetId}
+									bind:pendingDeleteBillId
+                                    layout={layoutPreset}
+								/>
+								{#if !bill.published && pendingDeleteBillId !== bill.id}
 									<PublishDraftBillButton
 										budget={$currentBudget}
 										{bill}
