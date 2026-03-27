@@ -18,3 +18,7 @@
 		}
 	});
 </script>
+
+<svelte:head>
+    <title>Callback (Read and Write) | Bills (For YNAB)</title>
+</svelte:head>
