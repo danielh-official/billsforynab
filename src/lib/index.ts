@@ -695,7 +695,7 @@ export function getActivityStatus(
 	const daysSince = Math.floor(
 		(new Date().getTime() - new Date(latestDateStr).getTime()) / (1000 * 60 * 60 * 24)
 	);
-	const active = daysSince <= freqDays * 1.7;
+	const active = daysSince <= freqDays * 2;
 	return { label: active ? 'likely active' : 'likely inactive', active };
 }
 

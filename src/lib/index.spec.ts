@@ -74,13 +74,13 @@ describe('getActivityStatus', () => {
 		it('returns likely active exactly at the 2× threshold (boundary)', () => {
 			// monthly = 30 days; 30 × 2 = 60 — paid exactly 60 days ago
 			const result = getActivityStatus(makeBill('monthly'), daysAgo(60));
-			expect(result).toEqual({ label: 'likely inactive', active: false });
+			expect(result).toEqual({ label: 'likely active', active: true });
 		});
 
 		it('returns likely active for weekly bill paid 13 days ago', () => {
 			// weekly = 7 days; threshold = 14 — 13 days ≤ 14
 			const result = getActivityStatus(makeBill('weekly'), daysAgo(13));
-			expect(result).toEqual({ label: 'likely inactive', active: false });
+			expect(result).toEqual({ label: 'likely active', active: true });
 		});
 
 		it('returns likely active for yearly bill paid 400 days ago', () => {
