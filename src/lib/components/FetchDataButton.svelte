@@ -18,11 +18,11 @@
 	let {
 		currentBudget,
 		isDemo,
-        fetchingData = $bindable()
+		fetchingData = $bindable()
 	}: {
 		currentBudget: CustomBudgetDetail | undefined;
 		isDemo: boolean;
-        fetchingData: boolean
+		fetchingData: boolean;
 	} = $props();
 
 	// MARK: - Fetching scheduled transactions for budget

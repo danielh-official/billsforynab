@@ -66,7 +66,6 @@
 			demoAccessType = stored;
 		}
 	});
-
 </script>
 
 <svelte:head>

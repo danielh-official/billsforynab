@@ -295,11 +295,13 @@
 <div class="flex w-full flex-col items-center gap-8">
 	{#if budgetId}
 		<div class="w-full">
-			<Breadcrumb items={[
-				{ label: 'Home', href: resolve('/') },
-				{ label: 'Plans', href: resolve('/plans') },
-				{ label: $currentBudget?.name ?? 'Plan' }
-			]} />
+			<Breadcrumb
+				items={[
+					{ label: 'Home', href: resolve('/') },
+					{ label: 'Plans', href: resolve('/plans') },
+					{ label: $currentBudget?.name ?? 'Plan' }
+				]}
+			/>
 			<h1 class="mt-2 text-lg font-medium text-stone-800 dark:text-stone-200">
 				{$currentBudget?.name ?? 'Plan'}
 			</h1>

@@ -13,7 +13,7 @@
 	<Breadcrumb items={[{ label: 'Home', href: resolve('/') }, { label: 'Privacy' }]} />
 </div>
 
-<div class="md:mx-auto prose md:max-w-5xl px-4 py-8 dark:prose-invert">
+<div class="prose px-4 py-8 md:mx-auto md:max-w-5xl dark:prose-invert">
 	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 	{@html data.content}
 </div>

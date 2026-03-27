@@ -328,12 +328,14 @@
 <div class="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-10">
 	{#if budgetId}
 		<div>
-			<Breadcrumb items={[
-				{ label: 'Home', href: resolve('/') },
-				{ label: 'Plans', href: resolve('/plans') },
-				{ label: _budget?.name ?? 'Plan', href: resolve(`/plan/${budgetId}`) },
-				{ label: 'Create Bill' }
-			]} />
+			<Breadcrumb
+				items={[
+					{ label: 'Home', href: resolve('/') },
+					{ label: 'Plans', href: resolve('/plans') },
+					{ label: _budget?.name ?? 'Plan', href: resolve(`/plan/${budgetId}`) },
+					{ label: 'Create Bill' }
+				]}
+			/>
 			<h1 class="mt-2 text-lg font-medium text-stone-800 dark:text-stone-200">Create Bill</h1>
 		</div>
 

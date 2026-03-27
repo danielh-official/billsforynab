@@ -53,7 +53,9 @@
 <div class="mx-auto flex w-full max-w-md flex-col items-center gap-3 text-center">
 	<div class="flex flex-col gap-3">
 		<h1 class="text-3xl font-bold text-stone-800 dark:text-stone-100">Bills (For YNAB)</h1>
-		<p class="text-stone-500 dark:text-stone-400">A companion app for YNAB to manage your bills (i.e., repeating transactions).</p>
+		<p class="text-stone-500 dark:text-stone-400">
+			A companion app for YNAB to manage your bills (i.e., repeating transactions).
+		</p>
 		<ul
 			class="list-disc space-y-1 pl-5 text-left text-sm text-stone-500 md:ml-10 dark:text-stone-400"
 		>
@@ -63,7 +65,7 @@
 		</ul>
 	</div>
 
-	<div class="mb-3 mt-10">
+	<div class="mt-10 mb-3">
 		{#if loggedIn && $defaultPlan}
 			{#if $defaultPlan}
 				<a
