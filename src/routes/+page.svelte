@@ -3,8 +3,6 @@
 	import { goto } from '$app/navigation';
 	import { db, type CustomBudgetDetail } from '$lib/db';
 	import { liveQuery } from 'dexie';
-	import lightBills from '$lib/assets/bills.light.png';
-	import darkBills from '$lib/assets/bills.dark.png';
 
 	const budgets = liveQuery(() => db.budgets.orderBy('id').toArray());
 
@@ -45,8 +43,8 @@
 		<span class="h-3 w-3 rounded-full bg-stone-300 dark:bg-stone-600"></span>
 	</div>
 	<div class="overflow-hidden rounded-lg">
-		<img src={lightBills} alt="Bills screenshot" class="w-full dark:hidden" />
-		<img src={darkBills} alt="Bills screenshot" class="hidden w-full dark:block" />
+		<enhanced:img src="$lib/assets/bills.light.png" alt="Bills screenshot" class="w-full dark:hidden" />
+		<enhanced:img src="$lib/assets/bills.dark.png" alt="Bills screenshot" class="hidden w-full dark:block" />
 	</div>
 </div>
 
