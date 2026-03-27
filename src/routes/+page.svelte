@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { db, type CustomBudgetDetail } from '$lib/db';
 	import { liveQuery } from 'dexie';
+	import { page } from '$app/state';
 
 	const budgets = liveQuery(() => db.budgets.orderBy('id').toArray());
 
@@ -104,7 +105,9 @@
 			{/if}
 		{:else}
 			<a
-				href={resolve('/login')}
+				href="{resolve('/login')}?redirect={encodeURIComponent(
+					page.url.pathname !== resolve('/login') ? page.url.pathname : resolve('/plans')
+				)}"
 				class="rounded-lg border border-stone-200 bg-stone-50 px-5 py-2.5 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800/30 dark:text-stone-400 dark:hover:bg-stone-800/50"
 			>
 				Login to YNAB
