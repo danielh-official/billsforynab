@@ -409,7 +409,7 @@
 		{:else if layoutPreset === 'grid'}
 			<!-- MARK: Grid View -->
 			<ul
-				class="m-0 grid w-full list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+				class="m-0 grid w-full list-none grid-cols-2 gap-4 p-0 lg:grid-cols-3 xl:grid-cols-4"
 				aria-label="Bills"
 			>
 				{#each bills as bill (bill.id)}
@@ -467,7 +467,9 @@
 								</span>
 								to <strong>{bill.payee_name ?? 'unspecified payee'}</strong>
 							</p>
-							<ul class="mt-2 space-y-0.5 text-xs text-stone-500 dark:text-stone-400">
+							<ul
+								class="mt-2 hidden space-y-0.5 text-xs text-stone-500 md:block dark:text-stone-400"
+							>
 								<li>
 									Category: {bill.category_name}
 									{getCategory(bill.category_id)
