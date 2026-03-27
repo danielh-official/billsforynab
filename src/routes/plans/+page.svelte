@@ -4,6 +4,7 @@
 	import type { BudgetDetail, BudgetSummaryResponse } from 'ynab/dist/models';
 	import { browser } from '$app/environment';
 	import { resolve } from '$app/paths';
+	import { goto } from '$app/navigation';
 
 	let authToken = $derived.by(() => {
 		if (browser) {
@@ -97,6 +98,23 @@
 <svelte:head>
 	<title>Plans | Bills (For YNAB)</title>
 </svelte:head>
+
+<svelte:window
+	onkeydown={(e: KeyboardEvent) => {
+		if (e.key === 'Escape') {
+			goto(resolve(`/`));
+		}
+	}}
+/>
+
+<div class="px-4 py-8 mx-auto">
+	<a
+		href={resolve('/')}
+		class="text-sm font-medium text-stone-600 hover:underline dark:text-stone-400"
+	>
+		&larr; Return Home
+	</a>
+</div>
 
 <div class="mx-auto flex w-full max-w-xl flex-col items-center gap-10">
 	<button
