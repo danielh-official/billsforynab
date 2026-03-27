@@ -28,10 +28,24 @@
 	const defaultPlan = liveQuery(() =>
 		db.budgets.toArray().then((budget) => budget.filter((x) => x.is_default)[0])
 	);
+
+	const jsonLd = JSON.stringify({
+		'@context': 'https://schema.org',
+		'@type': 'SoftwareApplication',
+		name: 'Bills (For YNAB)',
+		applicationCategory: 'FinanceApplication',
+		operatingSystem: 'Web',
+		description:
+			'A companion app for YNAB to manage your bills (repeating transactions). Features two-way sync with YNAB, monthly/yearly totals, bill history, and local-first storage.',
+		offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+		url: 'https://billsforynab.com'
+	});
 </script>
 
 <svelte:head>
 	<title>Bills (For YNAB)</title>
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html `<script type="application/ld+json">${jsonLd}</` + `script>`}
 </svelte:head>
 
 <div
@@ -43,8 +57,16 @@
 		<span class="h-3 w-3 rounded-full bg-stone-300 dark:bg-stone-600"></span>
 	</div>
 	<div class="overflow-hidden rounded-lg">
-		<enhanced:img src="$lib/assets/bills.light.png" alt="Bills screenshot" class="w-full dark:hidden" />
-		<enhanced:img src="$lib/assets/bills.dark.png" alt="Bills screenshot" class="hidden w-full dark:block" />
+		<enhanced:img
+			src="$lib/assets/bills.light.png"
+			alt="Bills screenshot"
+			class="w-full dark:hidden"
+		/>
+		<enhanced:img
+			src="$lib/assets/bills.dark.png"
+			alt="Bills screenshot"
+			class="hidden w-full dark:block"
+		/>
 	</div>
 </div>
 

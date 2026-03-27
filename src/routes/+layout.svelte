@@ -77,6 +77,24 @@
 	/>
 
 	<link rel="icon" href={favicon} />
+
+	<!-- Open Graph -->
+	<meta property="og:site_name" content="Bills (For YNAB)" />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content={page.url.href} />
+	<meta property="og:title" content="Bills (For YNAB)" />
+	<meta
+		property="og:description"
+		content="Manage your bills and sync them with your YNAB account."
+	/>
+
+	<!-- Twitter Card -->
+	<meta name="twitter:card" content="summary" />
+	<meta name="twitter:title" content="Bills (For YNAB)" />
+	<meta
+		name="twitter:description"
+		content="Manage your bills and sync them with your YNAB account."
+	/>
 </svelte:head>
 
 {#if isDemo}
