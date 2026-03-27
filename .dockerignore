@@ -20,6 +20,8 @@ playwright/.cache
 Thumbs.db
 *.md
 !README.md
+!GUIDE.md
+!PRIVACY.md
 .cursor
 .idea
 .vscode
