@@ -10,6 +10,7 @@
 	} from 'ynab/dist/models';
 	import { db } from '$lib/db';
 	import { resolve } from '$app/paths';
+	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 	import type {
 		CustomBudgetDetail,
 		CustomCategoryGroupWithCategories,
@@ -413,12 +414,12 @@
 <div class="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-10">
 	{#if budgetId && billId}
 		<div>
-			<a
-				href={resolve(`/plan/${budgetId}`)}
-				class="text-sm font-medium text-stone-600 hover:underline dark:text-stone-400"
-			>
-				← {_budget?.name ?? 'Plan'}
-			</a>
+			<Breadcrumb items={[
+				{ label: 'Home', href: resolve('/') },
+				{ label: 'Plans', href: resolve('/plans') },
+				{ label: _budget?.name ?? 'Plan', href: resolve(`/plan/${budgetId}`) },
+				{ label: 'Edit Bill' }
+			]} />
 			<h1 class="mt-2 text-lg font-medium text-stone-800 dark:text-stone-200">Edit Bill</h1>
 		</div>
 

@@ -4,6 +4,7 @@
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
+	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 
 	function getSafeRedirect(redirect: string | null): string {
 		if (!redirect) return resolve('/plans');
@@ -60,11 +61,9 @@
 	<title>Login with YNAB | Bills (For YNAB)</title>
 </svelte:head>
 
-<a
-	href={resolve('/')}
-	class="text-center text-sm text-stone-500 underline-offset-2 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
-	>&larr; Back to Home</a
->
+<div class="w-full px-4 py-4">
+	<Breadcrumb items={[{ label: 'Home', href: resolve('/') }, { label: 'Login' }]} />
+</div>
 
 <div class="mx-auto flex w-full max-w-sm flex-col items-center gap-8">
 	<h1 class="text-lg font-medium text-stone-800 dark:text-stone-200">Login with YNAB</h1>

@@ -5,6 +5,7 @@
 	import { browser } from '$app/environment';
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
+	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 
 	let authToken = $derived.by(() => {
 		if (browser) {
@@ -107,13 +108,8 @@
 	}}
 />
 
-<div class="px-4 py-8 mx-auto">
-	<a
-		href={resolve('/')}
-		class="text-sm font-medium text-stone-600 hover:underline dark:text-stone-400"
-	>
-		&larr; Return Home
-	</a>
+<div class="mx-auto w-full max-w-xl px-4 py-4">
+	<Breadcrumb items={[{ label: 'Home', href: resolve('/') }, { label: 'Plans' }]} />
 </div>
 
 <div class="mx-auto flex w-full max-w-xl flex-col items-center gap-10">

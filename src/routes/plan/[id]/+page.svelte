@@ -7,6 +7,7 @@
 	import { resolve } from '$app/paths';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { browser } from '$app/environment';
+	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 	import FetchDataButton from '$lib/components/FetchDataButton.svelte';
 	import ResetDataButton from '$lib/components/ResetDataButton.svelte';
 	import DeleteBillButton from '$lib/components/DeleteBillButton.svelte';
@@ -294,12 +295,11 @@
 <div class="flex w-full flex-col items-center gap-8">
 	{#if budgetId}
 		<div class="w-full">
-			<a
-				href={resolve('/plans')}
-				class="text-sm font-medium text-stone-600 hover:underline dark:text-stone-400"
-			>
-				← Plans
-			</a>
+			<Breadcrumb items={[
+				{ label: 'Home', href: resolve('/') },
+				{ label: 'Plans', href: resolve('/plans') },
+				{ label: $currentBudget?.name ?? 'Plan' }
+			]} />
 			<h1 class="mt-2 text-lg font-medium text-stone-800 dark:text-stone-200">
 				{$currentBudget?.name ?? 'Plan'}
 			</h1>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 
 	let { data } = $props();
 </script>
@@ -8,13 +9,8 @@
 	<title>Guide | Bills (For YNAB)</title>
 </svelte:head>
 
-<div class="px-4 py-8">
-	<a
-		href={resolve('/')}
-		class="text-sm font-medium text-stone-600 hover:underline dark:text-stone-400"
-	>
-		&larr; Home
-	</a>
+<div class="px-4 py-4">
+	<Breadcrumb items={[{ label: 'Home', href: resolve('/') }, { label: 'Guide' }]} />
 </div>
 
 <div class="md:mx-auto prose md:max-w-5xl md:px-4 py-8 dark:prose-invert">
