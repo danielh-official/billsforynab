@@ -86,7 +86,7 @@
 	</div>
 
 	<div class="mt-10 mb-3">
-		{#if loggedIn && $defaultPlan}
+		{#if loggedIn}
 			{#if $defaultPlan}
 				<a
 					href={resolve(`/plan/${$defaultPlan?.id}`)}
