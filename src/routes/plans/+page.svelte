@@ -36,36 +36,42 @@
 
 	const budgets = liveQuery(() => db.budgets.orderBy('id').toArray());
 
+	let pendingDeleteId = $state<string | null>(null);
+
 	function deleteBudget(id: string) {
-		if (confirm('Are you sure you want to delete this plan? This action cannot be undone.')) {
-			db.budgets.delete(id);
-
-			// Find all scheduled transactions associated with this budget and delete them
-			db.scheduled_transactions
-				.where('budget_id')
-				.equals(id)
-				.toArray()
-				.then((transactions) => {
-					const deletePromises = transactions.map((tx) => db.scheduled_transactions.delete(tx.id));
-					return Promise.all(deletePromises);
-				})
-				.catch((error) => {
-					console.error('Failed to delete scheduled transactions for budget:', error);
-				});
-
-			// Find all category groups associated with this budget and delete them
-			db.category_groups
-				.where('budget_id')
-				.equals(id)
-				.toArray()
-				.then((groups) => {
-					const deletePromises = groups.map((group) => db.category_groups.delete(group.id));
-					return Promise.all(deletePromises);
-				})
-				.catch((error) => {
-					console.error('Failed to delete category groups for budget:', error);
-				});
+		if (pendingDeleteId !== id) {
+			pendingDeleteId = id;
+			return;
 		}
+
+		pendingDeleteId = null;
+		db.budgets.delete(id);
+
+		// Find all scheduled transactions associated with this budget and delete them
+		db.scheduled_transactions
+			.where('budget_id')
+			.equals(id)
+			.toArray()
+			.then((transactions) => {
+				const deletePromises = transactions.map((tx) => db.scheduled_transactions.delete(tx.id));
+				return Promise.all(deletePromises);
+			})
+			.catch((error) => {
+				console.error('Failed to delete scheduled transactions for budget:', error);
+			});
+
+		// Find all category groups associated with this budget and delete them
+		db.category_groups
+			.where('budget_id')
+			.equals(id)
+			.toArray()
+			.then((groups) => {
+				const deletePromises = groups.map((group) => db.category_groups.delete(group.id));
+				return Promise.all(deletePromises);
+			})
+			.catch((error) => {
+				console.error('Failed to delete category groups for budget:', error);
+			});
 	}
 </script>
 
@@ -117,19 +123,38 @@
 							{/if}
 						</div>
 						<div class="flex shrink-0 gap-3 text-sm">
-							<a
-								href={resolve(`/plan/${budget.id}`)}
-								aria-label="View {budget.name}"
-								class="text-stone-600 hover:underline dark:text-stone-400">View</a
-							>
-							<button
-								type="button"
-								class="cursor-pointer text-stone-500 hover:text-red-600 hover:underline dark:text-stone-400 dark:hover:text-red-400"
-								onclick={() => deleteBudget(budget.id)}
-								aria-label="Delete {budget.name}"
-							>
-								Delete
-							</button>
+							{#if pendingDeleteId === budget.id}
+								<button
+									type="button"
+									class="cursor-pointer text-red-600 hover:underline dark:text-red-400"
+									onclick={() => deleteBudget(budget.id)}
+									aria-label="Confirm delete {budget.name}"
+								>
+									Confirm
+								</button>
+								<button
+									type="button"
+									class="cursor-pointer text-stone-500 hover:underline dark:text-stone-400"
+									onclick={() => (pendingDeleteId = null)}
+									aria-label="Cancel delete {budget.name}"
+								>
+									Cancel
+								</button>
+							{:else}
+								<a
+									href={resolve(`/plan/${budget.id}`)}
+									aria-label="View {budget.name}"
+									class="text-stone-600 hover:underline dark:text-stone-400">View</a
+								>
+								<button
+									type="button"
+									class="cursor-pointer text-stone-500 hover:text-red-600 hover:underline dark:text-stone-400 dark:hover:text-red-400"
+									onclick={() => deleteBudget(budget.id)}
+									aria-label="Delete {budget.name}"
+								>
+									Delete
+								</button>
+							{/if}
 						</div>
 					</li>
 				{/each}
