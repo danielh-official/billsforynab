@@ -89,3 +89,8 @@ button,
 a {
 	@apply cursor-pointer;
 }
+
+.prose blockquote p::before,
+.prose blockquote p::after {
+	content: none;
+}
