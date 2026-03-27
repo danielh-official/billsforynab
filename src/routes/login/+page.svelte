@@ -61,7 +61,7 @@
 	<title>Login with YNAB | Bills (For YNAB)</title>
 </svelte:head>
 
-<div class="w-full px-4 py-4 max-w-md self-center">
+<div class="w-full max-w-md self-center px-4 py-4">
 	<Breadcrumb items={[{ label: 'Home', href: resolve('/') }, { label: 'Login' }]} />
 </div>
 
