@@ -90,11 +90,19 @@
 		const scheduledTransactionsResponseJson: ScheduledTransactionsResponse =
 			await scheduledTransactionsFetch.json();
 
+		const existingScheduledTransactions = await db.scheduled_transactions
+			.where('budget_id')
+			.equals(budgetId)
+			.toArray();
+
+		const excludedMap = new Map(existingScheduledTransactions.map((t) => [t.id, t.excluded]));
+
 		const scheduledTransactions: CustomScheduledTransactionDetail[] =
 			scheduledTransactionsResponseJson.data.scheduled_transactions.map(
 				(scheduledTransaction: ScheduledTransactionDetail) => ({
 					...scheduledTransaction,
 					budget_id: budgetId,
+					excluded: excludedMap.get(scheduledTransaction.id),
 					monthly_amount:
 						scheduledTransaction.amount *
 						getFrequencyMultiplier(scheduledTransaction.frequency as ScheduledTransactionFrequency)
@@ -159,15 +167,9 @@
 		const fetchedTransactions: TransactionDetail[] = transactionsResponseJson.data.transactions;
 		const newTransactionsServerKnowledge = transactionsResponseJson.data.server_knowledge;
 
-		// Load existing scheduled transactions from DB to merge history
-		const existingScheduledTransactions = await db.scheduled_transactions
-			.where('budget_id')
-			.equals(budgetId)
-			.toArray();
-
 		const updatedWithHistory = assignHistoricalTransactionsToScheduledTransactions(
 			fetchedTransactions,
-			existingScheduledTransactions
+			scheduledTransactions
 		);
 
 		await db.scheduled_transactions.bulkPut(updatedWithHistory);
