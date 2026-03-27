@@ -248,6 +248,8 @@
 				return groups;
 			});
 	});
+
+	let fetchingData = $state(false);
 </script>
 
 <svelte:head>
@@ -259,10 +261,35 @@
 <svelte:window
 	onkeydown={(e: KeyboardEvent) => {
 		if (e.key === 'Escape') {
-			goto(resolve(`/`));
+			goto(resolve(`/plans`));
 		}
 	}}
 />
+
+{#if fetchingData}
+	<div
+		class="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-white/80 backdrop-blur-sm dark:bg-stone-900/80"
+		role="status"
+		aria-live="polite"
+	>
+		<svg
+			class="h-8 w-8 animate-spin text-stone-600 dark:text-stone-400"
+			xmlns="http://www.w3.org/2000/svg"
+			fill="none"
+			viewBox="0 0 24 24"
+			aria-hidden="true"
+		>
+			<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+			></circle>
+			<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+			></path>
+		</svg>
+		<p class="text-lg font-medium text-stone-800 dark:text-stone-100">Fetching data…</p>
+		<p class="max-w-xs text-center text-sm text-stone-500 dark:text-stone-400">
+			Please don't close this tab or navigate away until it's finished.
+		</p>
+	</div>
+{/if}
 
 <div class="flex w-full flex-col items-center gap-8">
 	{#if budgetId}
@@ -280,7 +307,7 @@
 
 		<!-- MARK: - Actions -->
 		<div class="flex w-full flex-wrap items-center gap-3">
-			<FetchDataButton currentBudget={$currentBudget} {isDemo} />
+			<FetchDataButton currentBudget={$currentBudget} {isDemo} bind:fetchingData />
 			<ResetDataButton currentBudget={$currentBudget} />
 			{#if effectiveWriteAccess}
 				<a
@@ -369,6 +396,7 @@
 				>
 			</p>
 		</section>
+
 		<!-- MARK: - Bills -->
 		{#if bills.length === 0}
 			<div
