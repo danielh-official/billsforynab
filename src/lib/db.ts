@@ -20,7 +20,6 @@ interface CustomScheduledTransactionDetail extends ScheduledTransactionDetail {
 	budget_id: string;
 	excluded?: boolean;
 	monthly_amount?: number;
-	published?: boolean;
 	history?: TransactionDetail[];
 }
 
@@ -34,12 +33,16 @@ const db = new Dexie('BillsForYnabDB') as Dexie & {
 	category_groups: EntityTable<CustomCategoryGroupWithCategories, 'id'>;
 };
 
-db.version(2).stores({
-	budgets: 'id',
-	scheduled_transactions:
-		'id, budget_id, date_first, date_next, frequency, category_name, payee_name',
-	category_groups: 'id, budget_id'
-});
+db.version(3)
+	.stores({
+		budgets: 'id',
+		scheduled_transactions:
+			'id, budget_id, date_first, date_next, frequency, category_name, payee_name',
+		category_groups: 'id, budget_id'
+	})
+	.upgrade((tx) => {
+		return tx.table('scheduled_transactions').clear();
+	});
 
 export type {
 	CustomBudgetDetail,

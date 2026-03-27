@@ -18,7 +18,6 @@
 	} from '$lib/db';
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 	import {
-		createBillInYNAB,
 		createFakeDataForDemo,
 		updateBillInYNAB,
 		supportedFrequencies,
@@ -276,7 +275,7 @@
 		);
 	});
 
-	async function handleSaveBill(shouldPublish: boolean) {
+	async function handleSaveBill() {
 		if (!budgetId || !existingBill) {
 			alert('Bill or budget not found.');
 			return;
@@ -321,84 +320,27 @@
 			category_id: billFormData.category_id || null
 		};
 
-		// Published bill: update in YNAB
-		if (existingBill.published) {
-			const result = await updateBillInYNAB(budgetId, existingBill.id, baseData, isDemo);
-			if (!result.success) {
-				alert(result.error ?? 'Failed to update bill in YNAB.');
-				return;
-			}
-			await db.scheduled_transactions.update(existingBill.id, {
-				account_name: accountName,
-				monthly_amount: computeMonthlyAmount(baseData.amount ?? 0, frequency),
-				published: true,
-				subtransactions: [...existingBill.subtransactions],
-				budget_id: existingBill.budget_id,
-				date_first: existingBill.date_first,
-				date_next: baseData.date ?? existingBill.date_next,
-				frequency: baseData.frequency ?? existingBill.frequency,
-				account_id: baseData.account_id,
-				amount: baseData.amount ?? existingBill.amount,
-				memo: baseData.memo ?? existingBill.memo,
-				payee_name: baseData.payee_name ?? existingBill.payee_name,
-				deleted: existingBill.deleted,
-				category_id: baseData.category_id ?? existingBill.category_id,
-				category_name: getCategoryName(baseData.category_id ?? existingBill.category_id) || null
-			});
-			goto(resolve(`/plan/${budgetId}`));
+		const result = await updateBillInYNAB(budgetId, existingBill.id, baseData, isDemo);
+		if (!result.success) {
+			alert(result.error ?? 'Failed to update bill in YNAB.');
 			return;
 		}
-
-		// Draft: publish to YNAB
-		if (shouldPublish) {
-			const createResult = await createBillInYNAB(budgetId, baseData, isDemo);
-			if (!createResult.success || !createResult.id) {
-				alert(createResult.error ?? 'Failed to publish draft bill.');
-				return;
-			}
-			const publishedBill: CustomScheduledTransactionDetail = {
-				id: createResult.id,
-				budget_id: budgetId,
-				account_name: accountName,
-				published: true,
-				monthly_amount: computeMonthlyAmount(baseData.amount ?? 0, frequency),
-				date_next: baseData.date ?? existingBill.date_next,
-				date_first: existingBill.date_first,
-				deleted: existingBill.deleted,
-				frequency: baseData.frequency ?? existingBill.frequency,
-				account_id: baseData.account_id,
-				category_id: baseData.category_id ?? existingBill.category_id,
-				category_name: getCategoryName(baseData.category_id ?? existingBill.category_id) || null,
-				amount: baseData.amount ?? existingBill.amount,
-				memo: baseData.memo ?? existingBill.memo,
-				payee_name: baseData.payee_name ?? existingBill.payee_name,
-				subtransactions: [...existingBill.subtransactions]
-			};
-			await db.scheduled_transactions.delete(existingBill.id);
-			await db.scheduled_transactions.put(publishedBill);
-			goto(resolve(`/plan/${budgetId}`));
-			return;
-		}
-
-		// Draft: save locally only
 		await db.scheduled_transactions.update(existingBill.id, {
 			account_name: accountName,
-			published: false,
 			monthly_amount: computeMonthlyAmount(baseData.amount ?? 0, frequency),
-			date_next: baseData.date ?? existingBill.date_next,
+			subtransactions: [...existingBill.subtransactions],
 			budget_id: existingBill.budget_id,
 			date_first: existingBill.date_first,
+			date_next: baseData.date ?? existingBill.date_next,
 			frequency: baseData.frequency ?? existingBill.frequency,
 			account_id: baseData.account_id,
 			amount: baseData.amount ?? existingBill.amount,
 			memo: baseData.memo ?? existingBill.memo,
 			payee_name: baseData.payee_name ?? existingBill.payee_name,
 			deleted: existingBill.deleted,
-			subtransactions: [...existingBill.subtransactions],
 			category_id: baseData.category_id ?? existingBill.category_id,
 			category_name: getCategoryName(baseData.category_id ?? existingBill.category_id) || null
 		});
-
 		goto(resolve(`/plan/${budgetId}`));
 	}
 </script>
@@ -569,36 +511,15 @@
 					>
 						Cancel
 					</a>
-					{#if existingBill.published}
-						<button
-							type="button"
-							class="rounded-lg bg-stone-800 px-4 py-2 font-medium text-white hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-700 dark:hover:bg-stone-600"
-							onclick={() => handleSaveBill(true)}
-							disabled={unsupportedFrequencyLock}
-							data-tooltip="Update this bill in your YNAB budget."
-						>
-							Save
-						</button>
-					{:else}
-						<button
-							type="button"
-							class="rounded-lg border border-stone-300 bg-white px-4 py-2 font-medium text-stone-700 hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700/50"
-							onclick={() => handleSaveBill(false)}
-							disabled={unsupportedFrequencyLock}
-							data-tooltip="Save the bill only in this app. It won't be sent to YNAB until you publish it from the plan page."
-						>
-							Save Draft
-						</button>
-						<button
-							type="button"
-							class="rounded-lg bg-stone-800 px-4 py-2 font-medium text-white hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-700 dark:hover:bg-stone-600"
-							onclick={() => handleSaveBill(true)}
-							disabled={unsupportedFrequencyLock}
-							data-tooltip="Save the bill and sync it to your YNAB budget right away."
-						>
-							Save & Publish
-						</button>
-					{/if}
+					<button
+						type="button"
+						class="rounded-lg bg-stone-800 px-4 py-2 font-medium text-white hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-700 dark:hover:bg-stone-600"
+						onclick={() => handleSaveBill()}
+						disabled={unsupportedFrequencyLock}
+						data-tooltip="Update this bill in your YNAB budget."
+					>
+						Save
+					</button>
 				</div>
 			</form>
 		{/if}

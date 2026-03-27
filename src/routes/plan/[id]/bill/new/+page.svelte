@@ -226,7 +226,7 @@
 		category_id: ''
 	});
 
-	async function handleSaveBill(shouldPublish: boolean) {
+	async function handleSaveBill() {
 		if (!budgetId) {
 			alert('Budget ID is missing.');
 			return;
@@ -265,40 +265,15 @@
 			category_id: billFormData.category_id || null
 		};
 
-		if (shouldPublish) {
-			const createResult = await createBillInYNAB(budgetId, baseData, isDemo);
-			if (!createResult.success || !createResult.id) {
-				alert(createResult.error ?? 'Failed to create bill in YNAB.');
-				return;
-			}
-			await db.scheduled_transactions.put({
-				id: createResult.id,
-				budget_id: budgetId,
-				account_name: accountName,
-				published: true,
-				monthly_amount: computeMonthlyAmount(baseData.amount ?? 0, frequency),
-				date_first: baseData.date,
-				date_next: baseData.date,
-				deleted: false,
-				subtransactions: [],
-				frequency: baseData.frequency ?? 'monthly',
-				account_id: baseData.account_id,
-				amount: baseData.amount ?? 0,
-				memo: baseData.memo ?? null,
-				payee_name: baseData.payee_name ?? null,
-				category_id: baseData.category_id || null,
-				category_name: getCategoryName(baseData.category_id || null) || null
-			});
-			goto(resolve(`/plan/${budgetId}`));
+		const createResult = await createBillInYNAB(budgetId, baseData, isDemo);
+		if (!createResult.success || !createResult.id) {
+			alert(createResult.error ?? 'Failed to create bill in YNAB.');
 			return;
 		}
-
-		const draftId = crypto.randomUUID();
 		await db.scheduled_transactions.put({
-			id: draftId,
+			id: createResult.id,
 			budget_id: budgetId,
 			account_name: accountName,
-			published: false,
 			monthly_amount: computeMonthlyAmount(baseData.amount ?? 0, frequency),
 			date_first: baseData.date,
 			date_next: baseData.date,
@@ -312,7 +287,6 @@
 			category_id: baseData.category_id || null,
 			category_name: getCategoryName(baseData.category_id || null) || null
 		});
-
 		goto(resolve(`/plan/${budgetId}`));
 	}
 </script>
@@ -467,19 +441,11 @@
 					</a>
 					<button
 						type="button"
-						class="rounded-lg border border-stone-300 bg-white px-4 py-2 font-medium text-stone-700 hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700/50"
-						onclick={() => handleSaveBill(false)}
-						data-tooltip="Save the bill only in this app. It won't be sent to YNAB until you publish it from the plan page."
-					>
-						Save Draft
-					</button>
-					<button
-						type="button"
 						class="rounded-lg bg-stone-800 px-4 py-2 font-medium text-white hover:bg-stone-700 dark:bg-stone-700 dark:hover:bg-stone-600"
-						onclick={() => handleSaveBill(true)}
+						onclick={() => handleSaveBill()}
 						data-tooltip="Save the bill and sync it to your YNAB budget right away."
 					>
-						Save & Publish
+						Save
 					</button>
 				</div>
 			</form>

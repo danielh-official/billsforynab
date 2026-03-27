@@ -67,11 +67,6 @@ You get everything with read-only access PLUS:
 
 > The ability to create, edit, and delete bills from here and have the changes show up in your YNAB.
 
-You have the option of creating a bill as draft or published:
-
-- Draft Bills: If you just want to see what your bill will look like without sending it to YNAB, you can create a bill as a draft. This is saved locally in your browser. (NOTE: if you clear all storage or use a new browser, the bill won't be available like it would be if it were published.)
-- Published Bills: If you want to sync the bill to YNAB immediately, create it with the "published" checkbox checked (or click on the upload icon and confirm to publish a draft).
-
 To create a new bill, click "Create Bill". To edit a bill, click the pencil icon.
 
 - Account is required
@@ -82,7 +77,7 @@ To delete a bill, click the trash icon and confirm.
 
 ### Demo Mode
 
-In the demo plan, you have access to all operations, but since you're not actually using the YNAB API, any calls for published bills are fake.
+In the demo plan, you have access to all operations, but since you're not actually using the YNAB API, any calls for bills are fake.
 
 ## For Developers &mdash; Setting Up Your Own Instance
 

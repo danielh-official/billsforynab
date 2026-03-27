@@ -11,7 +11,6 @@
 	import FetchDataButton from '$lib/components/FetchDataButton.svelte';
 	import ResetDataButton from '$lib/components/ResetDataButton.svelte';
 	import DeleteBillButton from '$lib/components/DeleteBillButton.svelte';
-	import PublishDraftBillButton from '$lib/components/PublishDraftBillButton.svelte';
 	import ToggleBillInclusionButton from '$lib/components/ToggleBillInclusionButton.svelte';
 	import BillDueDate from '$lib/components/BillDueDate.svelte';
 	import LastFetchedDate from '$lib/components/LastFetchedDate.svelte';
@@ -88,14 +87,6 @@
 	// MARK: - Fetching current budget from IndexedDB with live updates
 
 	let currentBudget = liveQuery(() => db.budgets.get(budgetId!));
-
-	let availableAccounts = $derived.by(() => {
-		return (
-			$currentBudget?.accounts
-				?.filter((account) => !(account.deleted || account.closed))
-				?.sort((a, b) => a.name.localeCompare(b.name)) ?? []
-		);
-	});
 
 	// MARK: - Sorting options with localStorage persistence
 
@@ -417,9 +408,7 @@
 					<li
 						class="relative rounded-lg border p-4 transition-all {bill.excluded
 							? 'bg-stone-100 opacity-50 dark:bg-stone-800/50'
-							: 'border-stone-200 bg-white dark:border-stone-700 dark:bg-stone-800'} {!bill.published
-							? 'border-dashed border-amber-400 dark:border-amber-600'
-							: ''}"
+							: 'border-stone-200 bg-white dark:border-stone-700 dark:bg-stone-800'}"
 					>
 						<div class="mb-2 flex justify-end gap-2">
 							{#if pendingDeleteBillId !== bill.id}
@@ -436,25 +425,8 @@
 									{budgetId}
 									bind:pendingDeleteBillId
 								/>
-								{#if !bill.published && pendingDeleteBillId !== bill.id}
-									<PublishDraftBillButton
-										budget={$currentBudget}
-										{bill}
-										{isDemo}
-										{billsBeingSynced}
-										{availableAccounts}
-										categoryGroups={$categoryGroups}
-									/>
-								{/if}
 							{/if}
 						</div>
-						{#if !bill.published}
-							<span
-								class="absolute top-2 left-2 rounded bg-amber-500 px-2 py-0.5 text-xs font-semibold text-white"
-							>
-								DRAFT
-							</span>
-						{/if}
 						{#if billsBeingSynced.has(bill.id)}
 							<span
 								class="absolute top-2 right-2 rounded bg-stone-700 px-2 py-0.5 text-xs font-medium text-white"
@@ -533,17 +505,8 @@
 					<li
 						class="relative flex items-center gap-3 px-3 py-2 transition-all first:rounded-t-lg last:rounded-b-lg {bill.excluded
 							? 'bg-stone-100 opacity-50 dark:bg-stone-800/50'
-							: 'bg-white dark:bg-stone-800'} {!bill.published
-							? 'border-l-2 border-l-amber-400 dark:border-l-amber-600'
-							: ''}"
+							: 'bg-white dark:bg-stone-800'}"
 					>
-						{#if !bill.published}
-							<span
-								class="shrink-0 rounded bg-amber-500 px-1.5 py-0.5 text-xs font-semibold text-white"
-							>
-								DRAFT
-							</span>
-						{/if}
 						{#if billsBeingSynced.has(bill.id)}
 							<span
 								class="shrink-0 rounded bg-stone-700 px-1.5 py-0.5 text-xs font-medium text-white"
@@ -605,18 +568,8 @@
 									{billsBeingSynced}
 									{budgetId}
 									bind:pendingDeleteBillId
-                                    layout={layoutPreset}
+									layout={layoutPreset}
 								/>
-								{#if !bill.published && pendingDeleteBillId !== bill.id}
-									<PublishDraftBillButton
-										budget={$currentBudget}
-										{bill}
-										{isDemo}
-										{billsBeingSynced}
-										{availableAccounts}
-										categoryGroups={$categoryGroups}
-									/>
-								{/if}
 							{/if}
 						</div>
 					</li>

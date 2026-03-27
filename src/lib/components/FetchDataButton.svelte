@@ -95,7 +95,6 @@
 				(scheduledTransaction: ScheduledTransactionDetail) => ({
 					...scheduledTransaction,
 					budget_id: budgetId,
-					published: true,
 					monthly_amount:
 						scheduledTransaction.amount *
 						getFrequencyMultiplier(scheduledTransaction.frequency as ScheduledTransactionFrequency)

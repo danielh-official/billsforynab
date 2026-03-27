@@ -49,11 +49,6 @@
 
 		pendingDeleteBillId = null;
 
-		if (!bill.published) {
-			await db.scheduled_transactions.delete(bill.id);
-			return;
-		}
-
 		setBillSyncing(bill.id, true);
 		const result = await deleteBillInYNAB(budgetId, bill.id, isDemo);
 		if (!result.success) {

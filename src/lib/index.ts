@@ -465,7 +465,6 @@ export async function createFakeDataForDemo() {
 			account_id: 'demo-account-1',
 			account_name: 'Checking Account',
 			deleted: false,
-			published: true,
 			subtransactions: []
 		},
 		{
@@ -487,7 +486,6 @@ export async function createFakeDataForDemo() {
 			account_id: 'demo-account-1',
 			account_name: 'Checking Account',
 			deleted: false,
-			published: true,
 			subtransactions: []
 		},
 		{
@@ -509,7 +507,6 @@ export async function createFakeDataForDemo() {
 			account_id: 'demo-account-1',
 			account_name: 'Checking Account',
 			deleted: false,
-			published: true,
 			subtransactions: []
 		},
 		{
@@ -531,7 +528,6 @@ export async function createFakeDataForDemo() {
 			account_id: 'demo-account-1',
 			account_name: 'Checking Account',
 			deleted: false,
-			published: true,
 			subtransactions: []
 		},
 		{
@@ -553,7 +549,6 @@ export async function createFakeDataForDemo() {
 			account_id: 'demo-account-1',
 			account_name: 'Checking Account',
 			deleted: false,
-			published: true,
 			subtransactions: []
 		},
 		{
@@ -575,7 +570,6 @@ export async function createFakeDataForDemo() {
 			account_id: 'demo-account-1',
 			account_name: 'Checking Account',
 			deleted: false,
-			published: true,
 			subtransactions: []
 		},
 		{
@@ -597,7 +591,6 @@ export async function createFakeDataForDemo() {
 			account_id: 'demo-account-1',
 			account_name: 'Checking Account',
 			deleted: false,
-			published: true,
 			subtransactions: []
 		},
 		// yearly
@@ -620,7 +613,6 @@ export async function createFakeDataForDemo() {
 			account_id: 'demo-account-1',
 			account_name: 'Checking Account',
 			deleted: false,
-			published: true,
 			subtransactions: []
 		}
 	];
