@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { db } from '$lib/db';
+	import { fetchBudgets } from '$lib';
 	import { liveQuery } from 'dexie';
-	import type { BudgetDetail, BudgetSummaryResponse } from 'ynab/dist/models';
 	import { browser } from '$app/environment';
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
@@ -20,44 +20,17 @@
 		fetchingBudgets = value;
 	}
 
-	async function fetchBudgets() {
+	async function handleFetchBudgets() {
 		if (!authToken) {
 			alert('No access token found. Please login again.');
 			return;
 		}
 
 		setFetchingBudgets(true);
-
-		const budgetsResponse = await fetch('https://api.ynab.com/v1/budgets?include_accounts=true', {
-			headers: {
-				Authorization: `Bearer ${authToken}`
-			}
-		});
-
-		if (budgetsResponse.status === 401) {
-			alert('Unauthorized. Please login again.');
-			sessionStorage.removeItem('ynab_access_token');
-			return;
+		const result = await fetchBudgets(authToken);
+		if (!result.success) {
+			alert(result.error);
 		}
-
-		if (!budgetsResponse.ok) {
-			alert(`Failed to fetch budgets: ${budgetsResponse.statusText}`);
-			return;
-		}
-
-		const budgetsData: BudgetSummaryResponse = await budgetsResponse.json();
-
-		const defaultBudgetId = budgetsData.data.default_budget?.id;
-
-		const budgets = budgetsData.data.budgets.map((b: BudgetDetail) => {
-			return {
-				...b,
-				is_default: b.id === defaultBudgetId
-			};
-		});
-
-		db.budgets.bulkPut(budgets);
-
 		setFetchingBudgets(false);
 	}
 
@@ -116,7 +89,7 @@
 	<button
 		type="button"
 		class="rounded-lg border border-stone-200 bg-stone-50 px-4 py-2 text-sm text-stone-500 hover:text-stone-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-stone-700 dark:bg-stone-800/30 dark:text-stone-400 dark:hover:bg-stone-800/50 dark:hover:text-stone-200"
-		onclick={fetchBudgets}
+		onclick={handleFetchBudgets}
 		disabled={fetchingBudgets || !authToken}
 	>
 		{fetchingBudgets ? 'Fetching…' : 'Fetch plans'}

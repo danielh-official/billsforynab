@@ -1,6 +1,8 @@
 // place files you want to import through the `$lib` alias in this folder.
 
 import type {
+	BudgetDetail,
+	BudgetSummaryResponse,
 	PostScheduledTransactionWrapper,
 	PutScheduledTransactionWrapper,
 	ScheduledTransactionFrequency,
@@ -13,6 +15,33 @@ import {
 	type CustomScheduledTransactionDetail
 } from '$lib/db';
 import { SvelteDate, SvelteMap } from 'svelte/reactivity';
+
+export async function fetchBudgets(
+	accessToken: string
+): Promise<{ success: boolean; error?: string }> {
+	const budgetsResponse = await fetch('https://api.ynab.com/v1/budgets?include_accounts=true', {
+		headers: { Authorization: `Bearer ${accessToken}` }
+	});
+
+	if (budgetsResponse.status === 401) {
+		sessionStorage.removeItem('ynab_access_token');
+		return { success: false, error: 'Unauthorized. Please login again.' };
+	}
+
+	if (!budgetsResponse.ok) {
+		return { success: false, error: `Failed to fetch budgets: ${budgetsResponse.statusText}` };
+	}
+
+	const budgetsData: BudgetSummaryResponse = await budgetsResponse.json();
+	const defaultBudgetId = budgetsData.data.default_budget?.id;
+	const budgets = budgetsData.data.budgets.map((b: BudgetDetail) => ({
+		...b,
+		is_default: b.id === defaultBudgetId
+	}));
+	db.budgets.bulkPut(budgets);
+
+	return { success: true };
+}
 
 export async function updateBillInYNAB(
 	budgetId: string,
