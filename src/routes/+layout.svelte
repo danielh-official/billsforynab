@@ -187,17 +187,17 @@
 		<p
 			class="mt-3 flex flex-wrap items-center justify-center gap-4 text-stone-500 dark:text-stone-400"
 		>
-			<a href="/privacy" class="text-gray-300 hover:underline">Privacy Policy</a>
-			<a href={resolve('/guide')} class="text-gray-300 hover:underline">Guide</a>
+			<a href="/privacy" class="text-gray-500 hover:underline dark:text-gray-300">Privacy Policy</a>
+			<a href={resolve('/guide')} class="text-gray-500 hover:underline dark:text-gray-300">Guide</a>
 			<a
 				href="https://ynab.com/referral/?ref=5uhATdvN0mdkvJzq&sponsor_name=DanielH&utm_source=customer_referral"
 				target="_blank"
 				rel="noopener sponsored"
-				class="text-gray-300 hover:underline">Referral (1 mo free)</a
+				class="text-gray-500 hover:underline dark:text-gray-300">Referral (1 mo free)</a
 			>
 			<a
 				href="https://github.com/danielh-official/billsforynab"
-				class="text-gray-300 hover:underline"
+				class="text-gray-500 hover:underline dark:text-gray-300"
 				target="_blank"
 				rel="noopener noreferrer">GitHub</a
 			>
