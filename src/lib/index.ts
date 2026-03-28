@@ -465,7 +465,21 @@ export async function createFakeDataForDemo() {
 			account_id: 'demo-account-1',
 			account_name: 'Checking Account',
 			deleted: false,
-			subtransactions: []
+			subtransactions: [],
+			history: [
+				{
+					id: 'demo-tx-1',
+					date: new SvelteDate(new SvelteDate().setDate(new SvelteDate().getDate() - 25)).toISOString().slice(0, 10),
+					amount: -75000,
+					memo: null, cleared: 'cleared', approved: true, flag_color: null, flag_name: null,
+					account_id: 'demo-account-1', account_name: 'Checking Account',
+					payee_id: null, payee_name: 'Electric Company', category_id: electricityCategory.id,
+					category_name: electricityCategory.name, transfer_account_id: null,
+					transfer_transaction_id: null, matched_transaction_id: null,
+					import_id: null, import_payee_name: null, import_payee_name_original: null,
+					debt_transaction_type: null, deleted: false, subtransactions: []
+				}
+			]
 		},
 		{
 			id: 'demo-bill-2',
@@ -486,7 +500,21 @@ export async function createFakeDataForDemo() {
 			account_id: 'demo-account-1',
 			account_name: 'Checking Account',
 			deleted: false,
-			subtransactions: []
+			subtransactions: [],
+			history: [
+				{
+					id: 'demo-tx-2',
+					date: new SvelteDate(new SvelteDate().setDate(new SvelteDate().getDate() - 20)).toISOString().slice(0, 10),
+					amount: -30000,
+					memo: null, cleared: 'cleared', approved: true, flag_color: null, flag_name: null,
+					account_id: 'demo-account-1', account_name: 'Checking Account',
+					payee_id: null, payee_name: 'Water Company', category_id: waterCategory.id,
+					category_name: waterCategory.name, transfer_account_id: null,
+					transfer_transaction_id: null, matched_transaction_id: null,
+					import_id: null, import_payee_name: null, import_payee_name_original: null,
+					debt_transaction_type: null, deleted: false, subtransactions: []
+				}
+			]
 		},
 		{
 			id: 'demo-bill-3',
@@ -507,7 +535,21 @@ export async function createFakeDataForDemo() {
 			account_id: 'demo-account-1',
 			account_name: 'Checking Account',
 			deleted: false,
-			subtransactions: []
+			subtransactions: [],
+			history: [
+				{
+					id: 'demo-tx-3',
+					date: new SvelteDate(new SvelteDate().setDate(new SvelteDate().getDate() - 28)).toISOString().slice(0, 10),
+					amount: -9990,
+					memo: null, cleared: 'cleared', approved: true, flag_color: null, flag_name: null,
+					account_id: 'demo-account-1', account_name: 'Checking Account',
+					payee_id: null, payee_name: 'Spotify', category_id: streamServicesCategory.id,
+					category_name: streamServicesCategory.name, transfer_account_id: null,
+					transfer_transaction_id: null, matched_transaction_id: null,
+					import_id: null, import_payee_name: null, import_payee_name_original: null,
+					debt_transaction_type: null, deleted: false, subtransactions: []
+				}
+			]
 		},
 		{
 			id: 'demo-bill-4',
@@ -528,7 +570,21 @@ export async function createFakeDataForDemo() {
 			account_id: 'demo-account-1',
 			account_name: 'Checking Account',
 			deleted: false,
-			subtransactions: []
+			subtransactions: [],
+			history: [
+				{
+					id: 'demo-tx-4',
+					date: new SvelteDate(new SvelteDate().setDate(new SvelteDate().getDate() - 15)).toISOString().slice(0, 10),
+					amount: -15900,
+					memo: null, cleared: 'cleared', approved: true, flag_color: null, flag_name: null,
+					account_id: 'demo-account-1', account_name: 'Checking Account',
+					payee_id: null, payee_name: 'Netflix', category_id: streamServicesCategory.id,
+					category_name: streamServicesCategory.name, transfer_account_id: null,
+					transfer_transaction_id: null, matched_transaction_id: null,
+					import_id: null, import_payee_name: null, import_payee_name_original: null,
+					debt_transaction_type: null, deleted: false, subtransactions: []
+				}
+			]
 		},
 		{
 			id: 'demo-bill-5',
@@ -549,7 +605,21 @@ export async function createFakeDataForDemo() {
 			account_id: 'demo-account-1',
 			account_name: 'Checking Account',
 			deleted: false,
-			subtransactions: []
+			subtransactions: [],
+			history: [
+				{
+					id: 'demo-tx-5',
+					date: new SvelteDate(new SvelteDate().setDate(new SvelteDate().getDate() - 10)).toISOString().slice(0, 10),
+					amount: -45000,
+					memo: null, cleared: 'cleared', approved: true, flag_color: null, flag_name: null,
+					account_id: 'demo-account-1', account_name: 'Checking Account',
+					payee_id: null, payee_name: 'Gym Membership', category_id: gymMembershipCategory.id,
+					category_name: gymMembershipCategory.name, transfer_account_id: null,
+					transfer_transaction_id: null, matched_transaction_id: null,
+					import_id: null, import_payee_name: null, import_payee_name_original: null,
+					debt_transaction_type: null, deleted: false, subtransactions: []
+				}
+			]
 		},
 		{
 			id: 'demo-bill-6',
@@ -570,7 +640,21 @@ export async function createFakeDataForDemo() {
 			account_id: 'demo-account-1',
 			account_name: 'Checking Account',
 			deleted: false,
-			subtransactions: []
+			subtransactions: [],
+			history: [
+				{
+					id: 'demo-tx-6',
+					date: new SvelteDate(new SvelteDate().setDate(new SvelteDate().getDate() - 35)).toISOString().slice(0, 10),
+					amount: -120000,
+					memo: null, cleared: 'cleared', approved: true, flag_color: null, flag_name: null,
+					account_id: 'demo-account-1', account_name: 'Checking Account',
+					payee_id: null, payee_name: 'Car Insurance', category_id: carInsuranceCategory.id,
+					category_name: carInsuranceCategory.name, transfer_account_id: null,
+					transfer_transaction_id: null, matched_transaction_id: null,
+					import_id: null, import_payee_name: null, import_payee_name_original: null,
+					debt_transaction_type: null, deleted: false, subtransactions: []
+				}
+			]
 		},
 		{
 			id: 'demo-bill-7',
@@ -591,7 +675,21 @@ export async function createFakeDataForDemo() {
 			account_id: 'demo-account-1',
 			account_name: 'Checking Account',
 			deleted: false,
-			subtransactions: []
+			subtransactions: [],
+			history: [
+				{
+					id: 'demo-tx-7',
+					date: new SvelteDate(new SvelteDate().setDate(new SvelteDate().getDate() - 23)).toISOString().slice(0, 10),
+					amount: -200000,
+					memo: null, cleared: 'cleared', approved: true, flag_color: null, flag_name: null,
+					account_id: 'demo-account-1', account_name: 'Checking Account',
+					payee_id: null, payee_name: 'Credit Card', category_id: creditCardCategory.id,
+					category_name: creditCardCategory.name, transfer_account_id: null,
+					transfer_transaction_id: null, matched_transaction_id: null,
+					import_id: null, import_payee_name: null, import_payee_name_original: null,
+					debt_transaction_type: null, deleted: false, subtransactions: []
+				}
+			]
 		},
 		// yearly
 		{
@@ -613,7 +711,21 @@ export async function createFakeDataForDemo() {
 			account_id: 'demo-account-1',
 			account_name: 'Checking Account',
 			deleted: false,
-			subtransactions: []
+			subtransactions: [],
+			history: [
+				{
+					id: 'demo-tx-8',
+					date: new SvelteDate(new SvelteDate().setDate(new SvelteDate().getDate() - 335)).toISOString().slice(0, 10),
+					amount: -60000,
+					memo: null, cleared: 'cleared', approved: true, flag_color: null, flag_name: null,
+					account_id: 'demo-account-1', account_name: 'Checking Account',
+					payee_id: null, payee_name: 'Car Registration', category_id: carRegistrationCategory.id,
+					category_name: carRegistrationCategory.name, transfer_account_id: null,
+					transfer_transaction_id: null, matched_transaction_id: null,
+					import_id: null, import_payee_name: null, import_payee_name_original: null,
+					debt_transaction_type: null, deleted: false, subtransactions: []
+				}
+			]
 		}
 	];
 
