@@ -472,7 +472,7 @@
 									class="mt-2 border-t border-stone-200 pt-2 text-xs text-stone-500 dark:border-stone-700 dark:text-stone-400"
 								>
 									<p>
-										Latest Date: {relativeDate(latestTx.date)}{#if status}
+										Last Paid Date: {relativeDate(latestTx.date)}{#if status}
 											<span class="m-2">
 												(<span
 													class={{
@@ -484,7 +484,7 @@
 										{/if}
 									</p>
 									<p>
-										Latest Amount: {determineAmountStringFromBudgetCurrency(
+										Last Paid Amount: {determineAmountStringFromBudgetCurrency(
 											-latestTx.amount,
 											$currentBudget
 										)}
