@@ -1,5 +1,7 @@
 # allow crawling everything by default
 User-agent: *
-Disallow:
+Disallow: /login
+Disallow: /callback
+Disallow: /callback/write
 
 Sitemap: https://billsforynab.com/sitemap.xml
