@@ -3,5 +3,7 @@ User-agent: *
 Disallow: /login
 Disallow: /callback
 Disallow: /callback/write
+Disallow: /plan*
+Disallow: /plans*
 
 Sitemap: https://billsforynab.com/sitemap.xml
