@@ -77,6 +77,7 @@
 	/>
 
 	<link rel="icon" href={favicon} />
+	<link rel="canonical" href={`https://billsforynab.com${page.url.pathname}`} />
 
 	<!-- Open Graph -->
 	<meta property="og:site_name" content="Bills (For YNAB)" />
